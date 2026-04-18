@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sign in · Red Cross Intel</title>
+<style>
+  :root { --bg:#111; --fg:#f4f4f4; --muted:#888; --red:#ED1B2E; --border:#2a2a2a; --panel:#181818; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  body { display:grid; place-items:center; padding:24px; }
+  .card { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:28px; }
+  h1 { margin:0 0 6px; font-size:20px; letter-spacing:0.2px; }
+  p.lead { margin:0 0 20px; color:var(--muted); font-size:13px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+  input[type=password] { width:100%; background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font:inherit; }
+  input[type=password]:focus { outline:none; border-color:var(--red); }
+  button { width:100%; margin-top:14px; background:var(--red); color:#fff; border:0; border-radius:8px; padding:10px 12px; font:600 14px/1 inherit; cursor:pointer; }
+  button:disabled { opacity:0.6; cursor:progress; }
+  .err { margin-top:10px; color:#ff8080; font-size:13px; min-height:18px; }
+  .brand { color:var(--red); font-weight:700; letter-spacing:0.4px; }
+</style>
+</head>
+<body>
+  <form class="card" id="f">
+    <h1><span class="brand">Red Cross</span> Intel</h1>
+    <p class="lead">Alpha access. Enter the passcode you were given.</p>
+    <label for="code">Access code</label>
+    <input id="code" name="code" type="password" autocomplete="off" autofocus required />
+    <button id="btn" type="submit">Sign in</button>
+    <div class="err" id="err"></div>
+  </form>
+<script>
+const f = document.getElementById("f");
+const btn = document.getElementById("btn");
+const err = document.getElementById("err");
+f.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  err.textContent = "";
+  btn.disabled = true;
+  const code = document.getElementById("code").value;
+  try {
+    const r = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      err.textContent = j.error || "Sign-in failed";
+      btn.disabled = false;
+      return;
+    }
+    const next = new URLSearchParams(location.search).get("next") || "/";
+    location.href = next.startsWith("/") ? next : "/";
+  } catch (x) {
+    err.textContent = x.message || "Network error";
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

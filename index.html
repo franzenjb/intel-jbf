@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Red Cross Intel</title>
+<style>
+  :root {
+    --bg:#111; --panel:#181818; --panel2:#1e1e1e; --fg:#f4f4f4; --muted:#8a8a8a;
+    --red:#ED1B2E; --border:#2a2a2a; --accent:#4aa3ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  header {
+    position:sticky; top:0; z-index:5; background:rgba(17,17,17,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .brand { font-weight:700; letter-spacing:0.3px; }
+  .brand .rc { color:var(--red); }
+  .sep { flex:1; }
+  select, button {
+    background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; font:inherit;
+  }
+  select:focus { outline:none; border-color:var(--accent); }
+  .scope-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .btn-ghost { background:transparent; color:var(--muted); cursor:pointer; border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--fg); border-color:var(--fg); }
+
+  main { padding:20px; max-width:1200px; margin:0 auto; }
+  .empty {
+    border:1px dashed var(--border); border-radius:12px; padding:40px; text-align:center; color:var(--muted);
+  }
+  .empty h2 { color:var(--fg); margin:0 0 8px; }
+
+  .grid {
+    display:grid; gap:14px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    margin-bottom:20px;
+  }
+  .tile {
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px;
+    min-height:150px; display:flex; flex-direction:column; gap:8px;
+  }
+  .tile h3 { margin:0; font-size:13px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.6px; }
+  .tile .body { font-size:14px; line-height:1.5; white-space:pre-wrap; flex:1; }
+  .tile .body a { color:var(--accent); }
+  .spinner {
+    width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--red);
+    border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .chat {
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px;
+  }
+  .chat h2 { margin:0 0 12px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; }
+  .messages { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; max-height:60vh; overflow:auto; }
+  .msg { padding:12px 14px; border-radius:10px; white-space:pre-wrap; line-height:1.5; }
+  .msg.user { background:#22272e; align-self:flex-end; max-width:85%; }
+  .msg.bot { background:var(--panel2); border:1px solid var(--border); }
+  .msg.bot.pending { color:var(--muted); }
+  .ask-row { display:flex; gap:8px; }
+  .ask-row textarea {
+    flex:1; background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px; font:inherit; resize:vertical; min-height:44px; max-height:200px;
+  }
+  .ask-row textarea:focus { outline:none; border-color:var(--accent); }
+  .ask-row button.send { background:var(--red); color:#fff; border:0; min-width:84px; }
+  .ask-row button.send:disabled { opacity:0.55; cursor:progress; }
+
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+
+  /* Markdown-ish */
+  .body code, .msg code { background:#0c0c0c; padding:1px 5px; border-radius:4px; font-size:13px; }
+  .body pre, .msg pre { background:#0c0c0c; padding:10px; border-radius:6px; overflow:auto; font-size:13px; }
+  .body table, .msg table { border-collapse:collapse; margin:8px 0; font-size:13px; }
+  .body th, .body td, .msg th, .msg td { border:1px solid var(--border); padding:4px 8px; text-align:left; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="rc">Red Cross</span> Intel</div>
+  <div class="scope-row">
+    <select id="scopeType">
+      <option value="division">Division</option>
+      <option value="region">Region</option>
+      <option value="chapter">Chapter</option>
+    </select>
+    <select id="scopeName" style="min-width:260px;">
+      <option value="">Loading…</option>
+    </select>
+  </div>
+  <div class="sep"></div>
+  <button class="btn-ghost" id="logout">Sign out</button>
+</header>
+
+<main>
+  <div id="empty" class="empty">
+    <h2>Pick a scope</h2>
+    <p>Select a division, region, or chapter above to load a briefing dashboard. Then ask anything below.</p>
+  </div>
+
+  <div id="dashboard" class="grid" hidden></div>
+
+  <section id="chatSection" class="chat" hidden>
+    <h2>Ask anything — scoped to your selection</h2>
+    <div id="messages" class="messages"></div>
+    <form id="askForm" class="ask-row">
+      <textarea id="q" placeholder="e.g. Which counties should we prioritize for hurricane pre-positioning?" rows="2" required></textarea>
+      <button class="send" type="submit" id="sendBtn">Ask</button>
+    </form>
+  </section>
+</main>
+
+<footer>Alpha · powered by <code>explorer.jbf.com/api/smart-query</code></footer>
+
+<script>
+// ───── Gate: ensure authed ───────────────────────────────────────────────────
+(async () => {
+  const r = await fetch("/api/me", { cache: "no-store" });
+  if (!r.ok) location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+})();
+
+// ───── Minimal markdown renderer ─────────────────────────────────────────────
+function mdToHtml(md) {
+  if (!md) return "";
+  const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
+  let out = esc(md);
+  out = out.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${c.trim()}</pre>`);
+  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+  out = out.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  out = out.replace(/^### (.+)$/gm, "<h4>$1</h4>");
+  out = out.replace(/^## (.+)$/gm, "<h3>$1</h3>");
+  out = out.replace(/^# (.+)$/gm, "<h3>$1</h3>");
+  return out.replace(/\n/g, "<br>");
+}
+
+// ───── Scope loading ─────────────────────────────────────────────────────────
+let scopes = null;
+const scopeType = document.getElementById("scopeType");
+const scopeName = document.getElementById("scopeName");
+const empty = document.getElementById("empty");
+const dashboard = document.getElementById("dashboard");
+const chatSection = document.getElementById("chatSection");
+
+async function loadScopes() {
+  const r = await fetch("/api/scopes");
+  if (!r.ok) {
+    scopeName.innerHTML = `<option>Error loading scopes</option>`;
+    return;
+  }
+  scopes = await r.json();
+  renderScopeNames();
+}
+
+function renderScopeNames() {
+  const t = scopeType.value;
+  const list = scopes[t + "s"] || [];
+  scopeName.innerHTML = `<option value="">— select ${t} —</option>` +
+    list.map((s, i) => `<option value="${i}">${s.name}</option>`).join("");
+}
+
+scopeType.addEventListener("change", () => {
+  renderScopeNames();
+});
+
+scopeName.addEventListener("change", () => {
+  const i = scopeName.value;
+  if (i === "") {
+    empty.hidden = false; dashboard.hidden = true; chatSection.hidden = true;
+    return;
+  }
+  const t = scopeType.value;
+  const s = scopes[t + "s"][Number(i)];
+  activateScope({ type: t, name: s.name, code: s.code, region: s.region, division: s.division });
+});
+
+// ───── Dashboard tiles ───────────────────────────────────────────────────────
+const TILES = [
+  { key: "vuln",   title: "Vulnerability summary",   prompt: "In 3 short sentences, summarize the overall social vulnerability profile (CDC SVI + FEMA NRI) across this scope. Name 2 representative counties." },
+  { key: "hazard", title: "Top hazards",             prompt: "What are the top 3 natural hazards by expected annual loss for counties in this scope? List the leading county for each. Use county_rankings.nri_* fields." },
+  { key: "alice",  title: "ALICE households",        prompt: "How many ALICE+poverty households are in this scope? Show the top 3 counties by ALICE household count." },
+  { key: "fema",   title: "Recent FEMA declarations", prompt: "List the 5 most recent FEMA disaster declarations affecting counties in this scope. Include declaration date and incident type." },
+  { key: "fire",   title: "Fire response (FLARE 2024)", prompt: "For counties in this scope, how many fires in CY2024 had RC Care vs RC Notification vs No RC Notification? Show totals and the top 3 counties by 'No RC Notification' count." },
+];
+
+function cacheKey(scope, tileKey) {
+  return `intel:tile:${scope.type}:${scope.code || scope.name}:${tileKey}`;
+}
+
+function chatCacheKey(scope) {
+  return `intel:chat:${scope.type}:${scope.code || scope.name}`;
+}
+
+async function runTile(scope, tile) {
+  const host = document.querySelector(`#tile-${tile.key} .body`);
+  const cached = localStorage.getItem(cacheKey(scope, tile.key));
+  if (cached) {
+    host.innerHTML = mdToHtml(cached);
+    return;
+  }
+  host.innerHTML = `<span class="spinner"></span> Thinking…`;
+  try {
+    const r = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: tile.prompt, scope }),
+    });
+    if (!r.ok) {
+      host.innerHTML = `<em style="color:#ff8080">Error ${r.status}</em>`;
+      return;
+    }
+    const j = await r.json();
+    host.innerHTML = mdToHtml(j.answer || "(no answer)");
+    if (j.answer) localStorage.setItem(cacheKey(scope, tile.key), j.answer);
+  } catch (e) {
+    host.innerHTML = `<em style="color:#ff8080">${e.message}</em>`;
+  }
+}
+
+function renderDashboardSkeleton(scope) {
+  dashboard.innerHTML = TILES.map(t => `
+    <div class="tile" id="tile-${t.key}">
+      <h3>${t.title}</h3>
+      <div class="body"><span class="spinner"></span> Queued…</div>
+    </div>
+  `).join("");
+}
+
+// ───── Chat ──────────────────────────────────────────────────────────────────
+const messagesEl = document.getElementById("messages");
+const askForm = document.getElementById("askForm");
+const qEl = document.getElementById("q");
+const sendBtn = document.getElementById("sendBtn");
+let currentScope = null;
+let history = [];
+
+function renderHistory() {
+  messagesEl.innerHTML = history.map(m =>
+    `<div class="msg ${m.role}${m.pending ? " pending" : ""}">${m.role === "user" ? m.text.replace(/</g,"&lt;") : mdToHtml(m.text)}</div>`
+  ).join("");
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function loadChat(scope) {
+  const raw = localStorage.getItem(chatCacheKey(scope));
+  history = raw ? JSON.parse(raw) : [];
+  renderHistory();
+}
+
+function saveChat(scope) {
+  localStorage.setItem(chatCacheKey(scope), JSON.stringify(history.slice(-30)));
+}
+
+askForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!currentScope) return;
+  const text = qEl.value.trim();
+  if (!text) return;
+  qEl.value = "";
+  sendBtn.disabled = true;
+  history.push({ role: "user", text });
+  history.push({ role: "bot", text: "Thinking…", pending: true });
+  renderHistory();
+  try {
+    const r = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: text, scope: currentScope }),
+    });
+    const j = await r.json();
+    history.pop(); // remove pending
+    if (!r.ok) {
+      history.push({ role: "bot", text: `Error ${r.status}: ${j.error || "unknown"}` });
+    } else {
+      history.push({ role: "bot", text: j.answer || "(no answer)" });
+    }
+  } catch (x) {
+    history.pop();
+    history.push({ role: "bot", text: `Network error: ${x.message}` });
+  }
+  saveChat(currentScope);
+  renderHistory();
+  sendBtn.disabled = false;
+});
+
+// ───── Scope activation ──────────────────────────────────────────────────────
+function activateScope(scope) {
+  currentScope = scope;
+  empty.hidden = true;
+  dashboard.hidden = false;
+  chatSection.hidden = false;
+  renderDashboardSkeleton(scope);
+  loadChat(scope);
+  // Stagger to be gentle on the upstream
+  TILES.forEach((t, i) => setTimeout(() => runTile(scope, t), i * 250));
+}
+
+// ───── Logout ────────────────────────────────────────────────────────────────
+document.getElementById("logout").addEventListener("click", async () => {
+  await fetch("/api/logout", { method: "POST" });
+  location.href = "/login";
+});
+
+loadScopes();
+</script>
+</body>
+</html>
