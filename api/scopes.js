@@ -15,7 +15,7 @@ async function sql(query) {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ sql_query: query }),
+    body: JSON.stringify({ sql_query: query.trim() }),
   });
   if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return r.json();
