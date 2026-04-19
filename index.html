@@ -8,8 +8,19 @@
 <style>
   :root {
     --bg:#0b0b0c; --panel:#131416; --panel2:#191a1d; --fg:#f4f4f4; --muted:#8a8a92;
-    --red:#ED1B2E; --red-dim:rgba(237,27,46,0.12); --red-outline:rgba(237,27,46,0.85);
+    --red:#ED1B2E; --red-dim:rgba(237,27,46,0.12); --red-outline:rgba(237,27,46,0.95);
     --border:#26282c; --accent:#4aa3ff; --amber:#f7a81b; --ok:#4ade80;
+    --overlay:rgba(19,20,22,0.92); --overlay-border:#2a2c30;
+    --input-bg:#0c0c0c;
+    --county-outline:rgba(255,255,255,0.25);
+  }
+  [data-theme="light"] {
+    --bg:#f4f5f7; --panel:#ffffff; --panel2:#f8f9fb; --fg:#101218; --muted:#5a5e68;
+    --red:#ED1B2E; --red-dim:rgba(237,27,46,0.08); --red-outline:#C91124;
+    --border:#d7dae0; --accent:#1769d6; --amber:#d48300; --ok:#16a34a;
+    --overlay:rgba(255,255,255,0.94); --overlay-border:#d7dae0;
+    --input-bg:#ffffff;
+    --county-outline:rgba(30,30,30,0.3);
   }
   * { box-sizing: border-box; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
@@ -44,7 +55,7 @@
   .sep { flex:1; }
 
   .scope-row { display:flex; gap:8px; align-items:center; }
-  .type-tabs { display:inline-flex; background:#0c0c0c; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .type-tabs { display:inline-flex; background:var(--input-bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
   .type-tabs button {
     background:transparent; color:var(--muted); border:0; padding:6px 12px;
     font:600 12px/1 inherit; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
@@ -54,7 +65,7 @@
 
   .combo { position:relative; }
   .combo input {
-    background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
+    background:var(--input-bg); color:var(--fg); border:1px solid var(--border); border-radius:8px;
     padding:7px 10px; font:inherit; width:300px;
   }
   .combo input:focus { outline:none; border-color:var(--accent); }
@@ -66,7 +77,7 @@
   }
   .combo-option { padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #222; }
   .combo-option:last-child { border-bottom:0; }
-  .combo-option:hover, .combo-option.active { background:#262626; }
+  .combo-option:hover, .combo-option.active { background:var(--panel2); }
   .combo-option .muted { color:var(--muted); font-size:11px; margin-left:6px; }
   .combo-empty { padding:10px 12px; color:var(--muted); font-size:13px; }
 
@@ -104,7 +115,7 @@
     display:grid; grid-template-columns: 20px 1fr auto; gap:8px; align-items:center;
     padding:7px 8px; border-radius:6px; cursor:pointer; transition:background 0.12s;
   }
-  .top5-row:hover { background:#1e1f22; }
+  .top5-row:hover { background:var(--panel2); }
   .top5-row.active { background:var(--red-dim); }
   .top5-rank { color:var(--muted); font-size:11px; font-weight:700; text-align:center; }
   .top5-name { font-size:13px; color:var(--fg); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -117,17 +128,17 @@
   #chatSection { flex:1; display:flex; flex-direction:column; overflow:hidden; }
   #messages { flex:1; overflow-y:auto; padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
   .msg { padding:9px 12px; border-radius:8px; line-height:1.5; font-size:13px; white-space:pre-wrap; word-wrap:break-word; }
-  .msg.user { background:#22272e; align-self:flex-end; max-width:90%; }
-  .msg.bot  { background:#191a1d; border:1px solid var(--border); }
+  .msg.user { background:var(--panel2); border:1px solid var(--border); align-self:flex-end; max-width:90%; }
+  .msg.bot  { background:var(--panel2); border:1px solid var(--border); }
   .msg.bot.pending { color:var(--muted); font-style:italic; }
-  .msg code { background:#0b0b0c; padding:1px 5px; border-radius:3px; font-size:12px; }
-  .msg pre  { background:#0b0b0c; padding:8px; border-radius:5px; overflow:auto; font-size:12px; margin:6px 0; }
+  .msg code { background:var(--input-bg); padding:1px 5px; border-radius:3px; font-size:12px; }
+  .msg pre  { background:var(--input-bg); padding:8px; border-radius:5px; overflow:auto; font-size:12px; margin:6px 0; }
   .msg strong { color:#fff; }
   #askForm {
-    display:flex; gap:6px; padding:10px 14px; border-top:1px solid var(--border); background:#111;
+    display:flex; gap:6px; padding:10px 14px; border-top:1px solid var(--border); background:var(--panel);
   }
   #askForm textarea {
-    flex:1; background:#0c0c0c; color:var(--fg); border:1px solid var(--border);
+    flex:1; background:var(--input-bg); color:var(--fg); border:1px solid var(--border);
     border-radius:6px; padding:8px 10px; font:13px/1.4 inherit; resize:none; min-height:36px; max-height:100px;
   }
   #askForm textarea:focus { outline:none; border-color:var(--accent); }
@@ -135,15 +146,15 @@
   #askForm button.send:disabled { opacity:0.5; cursor:progress; }
 
   /* ───── Map ──────────────────────────────────────────────────────────────── */
-  main#mapwrap { grid-area:map; position:relative; background:#000; }
+  main#mapwrap { grid-area:map; position:relative; background:var(--bg); }
   #map { position:absolute; inset:0; }
   .map-overlay {
     position:absolute; top:12px; left:12px; display:flex; flex-direction:column; gap:8px; z-index:10; pointer-events:none;
   }
   .chip-row { display:flex; gap:6px; flex-wrap:wrap; pointer-events:auto; }
   .map-chip {
-    background:rgba(19,20,22,0.92); backdrop-filter:blur(8px);
-    border:1px solid var(--border); color:var(--fg);
+    background:var(--overlay); backdrop-filter:blur(8px);
+    border:1px solid var(--overlay-border); color:var(--fg);
     padding:6px 12px; border-radius:20px; font:600 11px/1 inherit;
     letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
   }
@@ -151,14 +162,57 @@
   .map-chip.active { background:var(--red); border-color:var(--red); color:#fff; }
 
   .legend {
-    position:absolute; bottom:16px; right:16px; background:rgba(19,20,22,0.92); backdrop-filter:blur(8px);
-    border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:10;
-    font-size:11px; color:var(--muted); min-width:160px;
+    position:absolute; bottom:16px; left:16px; background:var(--overlay); backdrop-filter:blur(8px);
+    border:1px solid var(--overlay-border); border-radius:8px; padding:10px 14px; z-index:10;
+    font-size:11px; color:var(--muted); min-width:180px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
   }
   .legend h4 { margin:0 0 6px; font-size:10px; color:var(--fg); text-transform:uppercase; letter-spacing:0.8px; }
   .legend .bar { display:flex; gap:2px; margin:4px 0; }
-  .legend .bar div { flex:1; height:10px; }
+  .legend .bar div { flex:1; height:10px; border-radius:1px; }
   .legend .labels { display:flex; justify-content:space-between; font-size:10px; }
+
+  /* ───── Map controls (bottom-right stack) ───────────────────────────────── */
+  .map-controls {
+    position:absolute; bottom:16px; right:16px; z-index:10;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .ctrl-btn {
+    width:40px; height:40px; border-radius:8px;
+    background:var(--overlay); backdrop-filter:blur(8px);
+    border:1px solid var(--overlay-border); color:var(--fg);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    padding:0; transition:border-color .15s, transform .15s;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
+  }
+  .ctrl-btn:hover { border-color:var(--red); color:var(--red); }
+  .ctrl-btn svg { width:18px; height:18px; }
+  .ctrl-btn.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+  .basemap-panel {
+    position:absolute; bottom:16px; right:66px; z-index:11;
+    background:var(--overlay); backdrop-filter:blur(8px);
+    border:1px solid var(--overlay-border); border-radius:8px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.35);
+    padding:10px; min-width:180px;
+  }
+  .basemap-panel h4 {
+    margin:0 0 8px; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1.2px; font-weight:700;
+  }
+  .bm-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+  .bm-opt {
+    background:var(--panel2); border:1px solid var(--overlay-border);
+    border-radius:6px; padding:0; cursor:pointer; overflow:hidden;
+    display:flex; flex-direction:column; text-align:center;
+  }
+  .bm-opt:hover { border-color:var(--muted); }
+  .bm-opt.active { border-color:var(--red); box-shadow:0 0 0 1px var(--red) inset; }
+  .bm-thumb { height:36px; width:100%; display:block; }
+  .bm-label {
+    font:700 9px/1.2 inherit; color:var(--fg);
+    padding:5px 4px; letter-spacing:0.3px; text-transform:uppercase; background:var(--panel);
+  }
+  .bm-opt.active .bm-label { color:var(--red); }
 
   /* ───── Footer KPI strip ─────────────────────────────────────────────────── */
   footer#bottom {
@@ -270,6 +324,29 @@
       <div class="bar" id="legendBar"></div>
       <div class="labels" id="legendLabels"><span>0</span><span>100</span></div>
     </div>
+
+    <!-- Bottom-right control stack -->
+    <div class="map-controls">
+      <button class="ctrl-btn" id="basemapBtn" title="Basemap" aria-label="Basemap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12,2 2,7 12,12 22,7"></polygon>
+          <polyline points="2,17 12,22 22,17"></polyline>
+          <polyline points="2,12 12,17 22,12"></polyline>
+        </svg>
+      </button>
+      <button class="ctrl-btn" id="themeBtn" title="Toggle light/dark" aria-label="Toggle light/dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" id="themeIcon">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Basemap panel (hidden by default) -->
+    <div class="basemap-panel" id="basemapPanel" hidden>
+      <h4>Basemap</h4>
+      <div class="bm-grid" id="bmGrid"></div>
+    </div>
+
     <div class="dimmer" id="dimmer"><div class="spinner"></div></div>
   </main>
 
@@ -320,22 +397,36 @@ const HAZARD_PRETTY = {
 };
 const HAZARD_KEYS = Object.keys(HAZARD_PRETTY);
 
-// Color ramps (dark → bright)
-const RAMPS = {
-  red:   ["#1a1a1a", "#4a1419", "#8a1f2a", "#c42740", "#ED1B2E"],
-  amber: ["#1a1a1a", "#4a3014", "#8a5a1f", "#c48827", "#f7a81b"],
-  teal:  ["#1a1a1a", "#133636", "#1f5a5a", "#278a8a", "#3fc4c4"],
-};
+// Single bright sequential palette — ColorBrewer YlOrRd 7-step.
+// One ramp for every metric → consistent read; the scale/legend shifts per metric.
+const RAMP = [
+  "#ffffb2", "#fed976", "#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026",
+];
+// Alias kept for backward refs, all point at the same ramp.
+const RAMPS = { red: RAMP, amber: RAMP, teal: RAMP };
 const METRIC_META = {
   risk_score:          { label: "Overall risk",        min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
-  pct_struggling:      { label: "% struggling (ALICE+poverty)", min:15, max:65, ramp: "amber", fmt: (v)=>v?.toFixed(1)+"%" },
+  pct_struggling:      { label: "% struggling (ALICE+poverty)", min:15, max:65, ramp: "red", fmt: (v)=>v?.toFixed(1)+"%" },
   hurricane_risk:      { label: "Hurricane risk",      min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
-  flood_risk:          { label: "Flood risk",          min:0,  max:100, ramp: "teal",  fmt: (v)=>v?.toFixed(0) },
+  flood_risk:          { label: "Flood risk",          min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
   wildfire_risk:       { label: "Wildfire risk",       min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
-  tornado_risk:        { label: "Tornado risk",        min:0,  max:100, ramp: "amber", fmt: (v)=>v?.toFixed(0) },
-  heat_wave_risk:      { label: "Heat-wave risk",      min:0,  max:100, ramp: "amber", fmt: (v)=>v?.toFixed(0) },
+  tornado_risk:        { label: "Tornado risk",        min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
+  heat_wave_risk:      { label: "Heat-wave risk",      min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
   expected_annual_loss:{ label: "Expected annual loss", min:0, max:5e8, ramp: "red",   fmt: (v)=>"$"+shortNum(v) },
 };
+
+// ArcGIS basemaps available in the switcher. First entry is default for dark theme,
+// second is default for light theme. thumbBg/thumbLines are swatch colors for the grid.
+const BASEMAPS = [
+  { id: "dark-gray-vector", name: "Dark",     thumbBg: "#1a1a1e", thumbLines: "#444",     mode: "dark"  },
+  { id: "gray-vector",      name: "Light",    thumbBg: "#f5f5f0", thumbLines: "#d8d8d0",  mode: "light" },
+  { id: "streets-vector",   name: "Streets",  thumbBg: "#f0ece4", thumbLines: "#c8b898",  mode: "light" },
+  { id: "topo-vector",      name: "Topo",     thumbBg: "#d4c8a0", thumbLines: "#b0a070",  mode: "light" },
+  { id: "satellite",        name: "Imagery",  thumbBg: "#4a7c59", thumbLines: "#2a5a8c",  mode: "dark"  },
+  { id: "national-geographic", name: "NatGeo", thumbBg: "#e4dcc8", thumbLines: "#b8a880", mode: "light" },
+];
+let currentBasemapId = "dark-gray-vector";
+let currentTheme = "dark"; // dark | light — synced with html[data-theme]
 function shortNum(v) {
   if (v == null) return "—";
   if (v >= 1e9) return (v/1e9).toFixed(1)+"B";
@@ -363,6 +454,7 @@ async function bootstrap() {
   initChat();
   initLogout();
   await initMap();
+  initMapControls();
   // Pre-select a marquee division so the demo lands with data visible
   const se = scopes.divisions.find(d => d.name === "Southeast and Caribbean Division");
   if (se) {
@@ -469,7 +561,7 @@ function initMetricChips() {
 async function initMap() {
   arcgisMods = await loadArcGIS();
   const { Map, MapView, GraphicsLayer, FeatureLayer } = arcgisMods;
-  const map = new Map({ basemap: "dark-gray-vector" });
+  const map = new Map({ basemap: currentBasemapId });
   countyLayer = new GraphicsLayer({ id: "counties" });
   outlineLayer = new GraphicsLayer({ id: "outline" });
   map.addMany([countyLayer, outlineLayer]);
@@ -483,6 +575,91 @@ async function initMap() {
   });
   mapView.on("pointer-move", () => {}); // keep hit-tests alive
   mapView.popup.defaultPopupTemplateEnabled = false;
+  // expose for debugging
+  window._mapView = mapView;
+}
+
+// ───── Basemap + theme controls ──────────────────────────────────────────────
+function buildBasemapGrid() {
+  const grid = document.getElementById("bmGrid");
+  grid.innerHTML = "";
+  BASEMAPS.forEach(bm => {
+    const btn = document.createElement("button");
+    btn.className = "bm-opt" + (bm.id === currentBasemapId ? " active" : "");
+    btn.innerHTML = `
+      <svg class="bm-thumb" viewBox="0 0 48 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="36" fill="${bm.thumbBg}"/>
+        <path d="M0 18 Q12 10 24 18 T48 18" stroke="${bm.thumbLines}" stroke-width="1.5" fill="none" opacity="0.75"/>
+        <path d="M14 0 L14 36" stroke="${bm.thumbLines}" stroke-width="1" opacity="0.5"/>
+        <path d="M32 0 L32 36" stroke="${bm.thumbLines}" stroke-width="1" opacity="0.5"/>
+      </svg>
+      <span class="bm-label">${bm.name}</span>
+    `;
+    btn.addEventListener("click", () => selectBasemap(bm.id));
+    grid.appendChild(btn);
+  });
+}
+function selectBasemap(id) {
+  if (!mapView || !mapView.map) return;
+  currentBasemapId = id;
+  mapView.map.basemap = id;
+  buildBasemapGrid();
+  // Re-tune county outline contrast since basemap brightness changed
+  renderChoropleth();
+}
+function toggleBasemapPanel() {
+  const p = document.getElementById("basemapPanel");
+  const btn = document.getElementById("basemapBtn");
+  const showing = !p.hidden;
+  p.hidden = showing;
+  btn.classList.toggle("active", !showing);
+  if (!showing) buildBasemapGrid();
+}
+function applyTheme(mode) {
+  currentTheme = mode;
+  document.documentElement.setAttribute("data-theme", mode);
+  localStorage.setItem("intel:theme", mode);
+  // Swap the sun/moon icon
+  const icon = document.getElementById("themeIcon");
+  if (icon) {
+    icon.innerHTML = mode === "light"
+      ? '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  }
+  // If the current basemap doesn't match the theme, auto-switch to a matching one
+  const bm = BASEMAPS.find(b => b.id === currentBasemapId);
+  if (bm && bm.mode !== mode) {
+    const match = BASEMAPS.find(b => b.mode === mode);
+    if (match) selectBasemap(match.id);
+  }
+  // Re-render legend + choropleth to pick up var-driven colors
+  if (countyData) {
+    renderLegend();
+    renderChoropleth();
+  }
+}
+function initMapControls() {
+  // Restore saved theme
+  const saved = localStorage.getItem("intel:theme");
+  if (saved === "light" || saved === "dark") {
+    applyTheme(saved);
+    const bm = BASEMAPS.find(b => b.mode === saved);
+    if (bm) currentBasemapId = bm.id;
+  } else {
+    applyTheme("dark");
+  }
+  document.getElementById("basemapBtn").addEventListener("click", toggleBasemapPanel);
+  document.getElementById("themeBtn").addEventListener("click", () => {
+    applyTheme(currentTheme === "dark" ? "light" : "dark");
+  });
+  // Close basemap panel on outside click
+  document.addEventListener("click", (e) => {
+    const p = document.getElementById("basemapPanel");
+    if (p.hidden) return;
+    if (e.target.closest("#basemapPanel") || e.target.closest("#basemapBtn")) return;
+    p.hidden = true;
+    document.getElementById("basemapBtn").classList.remove("active");
+  });
 }
 
 function loadArcGIS() {
@@ -540,7 +717,8 @@ async function fetchCountyData(scope) {
 // ───── Briefing ──────────────────────────────────────────────────────────────
 async function renderBriefing(scope) {
   const briefEl = document.getElementById("briefing");
-  const key = `intel:brief:${scope.type}:${scope.code || scope.name}`;
+  // v4 = briefing API rewritten to return {briefing, source} from pre-generated cache
+  const key = `intel:brief:v4:${scope.type}:${scope.code || scope.name}`;
   const cached = localStorage.getItem(key);
   if (cached) {
     briefEl.classList.remove("loading");
@@ -556,10 +734,10 @@ async function renderBriefing(scope) {
       body: JSON.stringify({ scope })
     });
     const j = await r.json();
-    const text = (j.answer || j.error || "").trim();
+    const text = (j.briefing || j.answer || j.error || "").trim();
     briefEl.classList.remove("loading");
     briefEl.textContent = text;
-    if (j.answer) localStorage.setItem(key, j.answer);
+    if (j.briefing) localStorage.setItem(key, j.briefing);
   } catch (e) {
     briefEl.classList.remove("loading");
     briefEl.textContent = "Briefing unavailable — try the chat below.";
@@ -636,7 +814,9 @@ async function renderChoropleth() {
   }
 
   const meta = METRIC_META[activeMetric];
-  const ramp = RAMPS[meta.ramp];
+  const ramp = RAMP;
+  // Theme-aware county outline so it reads on both dark and light basemaps.
+  const outlineColor = currentTheme === "light" ? [30, 30, 30, 0.35] : [255, 255, 255, 0.22];
 
   for (const f of result.features) {
     const fips = String(f.attributes.FIPS).padStart(5, "0");
@@ -646,7 +826,7 @@ async function renderChoropleth() {
     const color = valueToColor(v, meta, ramp);
     const sym = new SimpleFillSymbol({
       color,
-      outline: new SimpleLineSymbol({ color: [0, 0, 0, 0.35], width: 0.4 }),
+      outline: new SimpleLineSymbol({ color: outlineColor, width: 0.5 }),
     });
     const g = new Graphic({
       geometry: f.geometry,
@@ -662,12 +842,16 @@ async function renderChoropleth() {
 }
 
 function valueToColor(v, meta, ramp) {
-  if (v == null || Number.isNaN(v)) return [60, 60, 60, 0.25];
+  // Missing data → soft neutral that reads on both themes
+  if (v == null || Number.isNaN(v)) {
+    return currentTheme === "light" ? [200, 200, 200, 0.55] : [90, 90, 90, 0.4];
+  }
   const t = Math.max(0, Math.min(1, (v - meta.min) / (meta.max - meta.min)));
   const idx = Math.min(ramp.length - 1, Math.floor(t * (ramp.length - 0.001)));
   const hex = ramp[idx];
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
-  return [r, g, b, 0.72];
+  // Higher saturation = "brighter" polygons Dragon asked for
+  return [r, g, b, 0.88];
 }
 
 function countyPopup(feature) {
@@ -680,19 +864,20 @@ function countyPopup(feature) {
     .filter(x => x.v != null)
     .sort((x, y) => y.v - x.v)
     .slice(0, 3)
-    .map(x => `<span style="background:#2a2a2a;padding:2px 6px;border-radius:3px;margin-right:4px;font-size:11px;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`)
+    .map(x => `<span style="background:rgba(120,120,120,0.18);padding:2px 6px;border-radius:3px;margin-right:4px;font-size:11px;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`)
     .join("");
+  // ArcGIS popup uses its own light chrome; use mid-grey + inherited color so it reads in both themes.
   return `
     <div style="font:13px/1.4 sans-serif;">
       <div style="display:flex;gap:12px;margin-bottom:8px;">
-        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">Population</div><div style="font-weight:700;">${fmtNum(a.population)}</div></div>
-        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">Risk</div><div style="font-weight:700;">${risk}</div></div>
-        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">Struggling</div><div style="font-weight:700;">${pct}</div></div>
-        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">EAL</div><div style="font-weight:700;">${eal}</div></div>
+        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">Population</div><div style="font-weight:700;">${fmtNum(a.population)}</div></div>
+        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">Risk</div><div style="font-weight:700;">${risk}</div></div>
+        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">Struggling</div><div style="font-weight:700;">${pct}</div></div>
+        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">EAL</div><div style="font-weight:700;">${eal}</div></div>
       </div>
-      <div style="font-size:10px;color:#999;text-transform:uppercase;margin-bottom:4px;">Top hazards</div>
+      <div style="font-size:10px;color:#666;text-transform:uppercase;margin-bottom:4px;">Top hazards</div>
       <div>${hazards || "<em>none ranked</em>"}</div>
-      <div style="margin-top:8px;font-size:11px;color:#999;">Chapter: <span style="color:#fff;">${a.chapter || "—"}</span></div>
+      <div style="margin-top:8px;font-size:11px;color:#666;">Chapter: <span style="font-weight:700;">${a.chapter || "—"}</span></div>
     </div>
   `;
 }
