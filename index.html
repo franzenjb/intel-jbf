@@ -182,15 +182,15 @@ scopeName.addEventListener("change", () => {
 
 // ───── Dashboard tiles ───────────────────────────────────────────────────────
 const TILES = [
-  { key: "vuln",   title: "High-vulnerability counties", prompt: "Using supabase_sql on county_rankings (scoped per the system prefix), count counties where svi_overall >= 0.75, and the #1 by svi_overall. Respond with EXACTLY these three lines, no preamble, no explanation, no code fence:\n## <N>\ncounties SVI ≥ 0.75\nTop: <county>, <state>" },
-  { key: "hazard", title: "Leading hazard",             prompt: "Using supabase_sql on county_rankings, find the hazard with the highest total expected annual loss across scope. The NRI hazard columns are named like: nri_eal_hrcn (hurricane), nri_eal_wfir (wildfire), nri_eal_rfld (river flood), nri_eal_cfld (coastal flood), nri_eal_trnd (tornado), nri_eal_erqk (earthquake), nri_eal_hwav (heatwave). Sum each, pick the largest. Respond with EXACTLY three lines, no preamble:\n## <Hazard name>\n$<total EAL, formatted with M or B>\nLead county: <name>, <state>" },
-  { key: "alice",  title: "ALICE households",           prompt: "Using supabase_sql on county_rankings, sum alice_households + poverty_households across scope. Respond with EXACTLY three lines, no preamble:\n## <total, formatted with commas>\nALICE + poverty households\nTop: <county>, <state> (<count>)" },
-  { key: "fema",   title: "Recent FEMA declarations",   prompt: "Using supabase_sql on fema_declarations, count declarations in scope in the last 365 days, plus the most recent one. Respond with EXACTLY three lines, no preamble:\n## <N>\ndeclarations in last 365 days\nLatest: <incident_type> (<declaration_date>)" },
-  { key: "fire",   title: "Fires without RC response",   prompt: "Using agol_query on the flare_fire_incidents layer (Master_Label = 'No RC Notification'), count CY2024 incidents in scope, and name the chapter with the most. Respond with EXACTLY three lines, no preamble:\n## <N>\nfires w/o RC notification (CY2024)\nWorst chapter: <chapter name>" },
+  { key: "vuln",   title: "High-struggling counties",   prompt: "Using supabase_sql on county_rankings, count counties in scope where pct_struggling >= 50 (ALICE + poverty ≥50% of households), and the top county by pct_struggling. Respond with EXACTLY three lines, no preamble, no code fence:\n## <N>\ncounties ≥50% struggling\nTop: <county>, <state> (<pct>%)" },
+  { key: "hazard", title: "Leading hazard (avg risk)",  prompt: "Using supabase_sql on county_rankings, compute AVG of each: hurricane_risk, wildfire_risk, flood_risk, coastal_flood_risk, tornado_risk, earthquake_risk, heat_wave_risk, winter_storm_risk across scope counties. Pick the hazard with the highest average (scores are 0-100). Find the county with the highest value of that specific hazard_risk column. Respond with EXACTLY three lines, no preamble:\n## <Hazard name, e.g. Hurricane>\navg risk <X.X> / 100\nLead: <county>, <state> (<score>)" },
+  { key: "alice",  title: "ALICE + poverty households", prompt: "Using supabase_sql, for counties in scope compute the sum of (pct_struggling * population / 100) as total struggling households. Find the top county by that same calculation. Respond with EXACTLY three lines, no preamble:\n## <total, rounded, with commas>\nALICE + poverty households\nTop: <county>, <state> (<count, rounded>)" },
+  { key: "fema",   title: "FEMA declarations (since 2020)", prompt: "Using supabase_sql on fema_declarations, count total declarations covering any county in scope since 2020, and identify the single most common incident_type. Respond with EXACTLY three lines, no preamble:\n## <N>\nFEMA declarations since 2020\nMost common: <incident_type>" },
+  { key: "fire",   title: "Fires without RC response (2024)", prompt: "Using agol_query on the flare_fire_incidents layer, filter to Master_Label = 'No RC Notification' and incidents in CY2024 whose county belongs to this scope. Count total, name the chapter (within scope) with the most. Respond with EXACTLY three lines, no preamble:\n## <N>\nfires w/o RC notification (CY2024)\nWorst chapter: <chapter name>" },
 ];
 
 function cacheKey(scope, tileKey) {
-  return `intel:tile:v2:${scope.type}:${scope.code || scope.name}:${tileKey}`;
+  return `intel:tile:v3:${scope.type}:${scope.code || scope.name}:${tileKey}`;
 }
 
 function chatCacheKey(scope) {
