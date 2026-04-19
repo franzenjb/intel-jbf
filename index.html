@@ -4,146 +4,302 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Red Cross Intel</title>
+<link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/dark/main.css" />
 <style>
   :root {
-    --bg:#111; --panel:#181818; --panel2:#1e1e1e; --fg:#f4f4f4; --muted:#8a8a8a;
-    --red:#ED1B2E; --border:#2a2a2a; --accent:#4aa3ff;
+    --bg:#0b0b0c; --panel:#131416; --panel2:#191a1d; --fg:#f4f4f4; --muted:#8a8a92;
+    --red:#ED1B2E; --red-dim:rgba(237,27,46,0.12); --red-outline:rgba(237,27,46,0.85);
+    --border:#26282c; --accent:#4aa3ff; --amber:#f7a81b; --ok:#4ade80;
   }
   * { box-sizing: border-box; }
-  html, body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
-  header {
-    position:sticky; top:0; z-index:5; background:rgba(17,17,17,0.92); backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    overflow:hidden; }
+
+  /* ───── Grid layout ─────────────────────────────────────────────────────── */
+  #app {
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    grid-template-rows: 52px 1fr 56px;
+    grid-template-areas:
+      "header header"
+      "rail map"
+      "footer footer";
+    height:100vh;
   }
-  .brand { font-weight:700; letter-spacing:0.3px; }
+  header#top {
+    grid-area:header; background:var(--panel); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:16px; padding:0 18px; position:relative; z-index:20;
+  }
+  .brand { font-weight:800; letter-spacing:0.4px; font-size:15px; }
   .brand .rc { color:var(--red); }
-  .sep { flex:1; }
-  select, button {
-    background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
-    padding:8px 10px; font:inherit;
+  .brand .pulse {
+    display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--red);
+    margin-right:8px; vertical-align:middle; animation:pulse 2s ease-in-out infinite;
   }
-  select:focus { outline:none; border-color:var(--accent); }
-  .scope-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  @keyframes pulse {
+    0%, 100% { box-shadow:0 0 0 0 rgba(237,27,46,0.7); }
+    50%      { box-shadow:0 0 0 6px rgba(237,27,46,0); }
+  }
+  .sep { flex:1; }
+
+  .scope-row { display:flex; gap:8px; align-items:center; }
+  .type-tabs { display:inline-flex; background:#0c0c0c; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .type-tabs button {
+    background:transparent; color:var(--muted); border:0; padding:6px 12px;
+    font:600 12px/1 inherit; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+  }
+  .type-tabs button.active { background:var(--red); color:#fff; }
+  .type-tabs button:hover:not(.active) { color:var(--fg); }
+
   .combo { position:relative; }
   .combo input {
     background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
-    padding:8px 10px; font:inherit; min-width:280px;
+    padding:7px 10px; font:inherit; width:300px;
   }
   .combo input:focus { outline:none; border-color:var(--accent); }
   .combo-panel {
     position:absolute; top:calc(100% + 4px); left:0; right:0;
     background:var(--panel); border:1px solid var(--border); border-radius:8px;
-    max-height:320px; overflow-y:auto; z-index:10;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-height:360px; overflow-y:auto; z-index:100;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
   }
   .combo-option { padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #222; }
   .combo-option:last-child { border-bottom:0; }
   .combo-option:hover, .combo-option.active { background:#262626; }
   .combo-option .muted { color:var(--muted); font-size:11px; margin-left:6px; }
   .combo-empty { padding:10px 12px; color:var(--muted); font-size:13px; }
-  .btn-ghost { background:transparent; color:var(--muted); cursor:pointer; border:1px solid var(--border); }
-  .btn-ghost:hover { color:var(--fg); border-color:var(--fg); }
 
-  main { padding:20px; max-width:1200px; margin:0 auto; }
-  .empty {
-    border:1px dashed var(--border); border-radius:12px; padding:40px; text-align:center; color:var(--muted);
+  .icon-btn {
+    background:transparent; border:1px solid var(--border); color:var(--muted);
+    border-radius:8px; padding:6px 10px; font:inherit; cursor:pointer; font-size:12px;
   }
-  .empty h2 { color:var(--fg); margin:0 0 8px; }
+  .icon-btn:hover { color:var(--fg); border-color:var(--fg); }
 
-  .grid {
-    display:grid; gap:14px;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    margin-bottom:20px;
+  /* ───── Left rail ────────────────────────────────────────────────────────── */
+  aside#rail {
+    grid-area:rail; background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
   }
-  .tile {
-    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 18px;
-    min-height:150px; display:flex; flex-direction:column; gap:6px;
+  .rail-empty { padding:40px 24px; color:var(--muted); font-size:13px; line-height:1.6; text-align:center; }
+  .rail-empty strong { color:var(--fg); display:block; font-size:15px; margin-bottom:6px; }
+
+  .section { padding:14px 18px; border-bottom:1px solid var(--border); }
+  .section h3 {
+    margin:0 0 8px; font-size:10px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:0.9px; font-weight:700; display:flex; align-items:center; gap:6px;
   }
-  .tile .title { margin:0; font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; }
-  .tile .body { font-size:13px; line-height:1.45; color:var(--muted); flex:1; display:flex; flex-direction:column; justify-content:center; }
-  .tile .body h3 { margin:0 0 4px; font-size:38px; line-height:1.1; font-weight:700; color:var(--fg); letter-spacing:-0.5px; }
-  .tile .body h3 + br { display:none; }
-  .tile .body a { color:var(--accent); }
-  .tile .body strong { color:var(--fg); }
+  .section h3 .dot { width:6px; height:6px; background:var(--red); border-radius:50%; }
+
+  #briefing {
+    font-size:14px; line-height:1.55; color:var(--fg); min-height:52px;
+    font-weight:500; letter-spacing:0.1px;
+  }
+  #briefing.loading { color:var(--muted); font-style:italic; }
+  #briefing .shimmer { display:inline-block; width:80%; height:12px; background:linear-gradient(90deg,#222 0%,#333 50%,#222 100%); background-size:200% 100%; animation:sh 1.6s infinite; border-radius:3px; margin-top:4px; }
+  @keyframes sh { to { background-position:-200% 0; } }
+
+  #top5 { display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; }
+  .top5-row {
+    display:grid; grid-template-columns: 20px 1fr auto; gap:8px; align-items:center;
+    padding:7px 8px; border-radius:6px; cursor:pointer; transition:background 0.12s;
+  }
+  .top5-row:hover { background:#1e1f22; }
+  .top5-row.active { background:var(--red-dim); }
+  .top5-rank { color:var(--muted); font-size:11px; font-weight:700; text-align:center; }
+  .top5-name { font-size:13px; color:var(--fg); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .top5-name .state { color:var(--muted); font-weight:400; }
+  .top5-val {
+    font:700 12px/1 "SF Mono",ui-monospace,Menlo,monospace; color:var(--amber);
+    background:rgba(247,168,27,0.12); padding:3px 7px; border-radius:4px; min-width:42px; text-align:center;
+  }
+
+  #chatSection { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  #messages { flex:1; overflow-y:auto; padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
+  .msg { padding:9px 12px; border-radius:8px; line-height:1.5; font-size:13px; white-space:pre-wrap; word-wrap:break-word; }
+  .msg.user { background:#22272e; align-self:flex-end; max-width:90%; }
+  .msg.bot  { background:#191a1d; border:1px solid var(--border); }
+  .msg.bot.pending { color:var(--muted); font-style:italic; }
+  .msg code { background:#0b0b0c; padding:1px 5px; border-radius:3px; font-size:12px; }
+  .msg pre  { background:#0b0b0c; padding:8px; border-radius:5px; overflow:auto; font-size:12px; margin:6px 0; }
+  .msg strong { color:#fff; }
+  #askForm {
+    display:flex; gap:6px; padding:10px 14px; border-top:1px solid var(--border); background:#111;
+  }
+  #askForm textarea {
+    flex:1; background:#0c0c0c; color:var(--fg); border:1px solid var(--border);
+    border-radius:6px; padding:8px 10px; font:13px/1.4 inherit; resize:none; min-height:36px; max-height:100px;
+  }
+  #askForm textarea:focus { outline:none; border-color:var(--accent); }
+  #askForm button.send { background:var(--red); color:#fff; border:0; border-radius:6px; padding:0 14px; font:600 13px/1 inherit; cursor:pointer; }
+  #askForm button.send:disabled { opacity:0.5; cursor:progress; }
+
+  /* ───── Map ──────────────────────────────────────────────────────────────── */
+  main#mapwrap { grid-area:map; position:relative; background:#000; }
+  #map { position:absolute; inset:0; }
+  .map-overlay {
+    position:absolute; top:12px; left:12px; display:flex; flex-direction:column; gap:8px; z-index:10; pointer-events:none;
+  }
+  .chip-row { display:flex; gap:6px; flex-wrap:wrap; pointer-events:auto; }
+  .map-chip {
+    background:rgba(19,20,22,0.92); backdrop-filter:blur(8px);
+    border:1px solid var(--border); color:var(--fg);
+    padding:6px 12px; border-radius:20px; font:600 11px/1 inherit;
+    letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+  }
+  .map-chip:hover { border-color:var(--muted); }
+  .map-chip.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+  .legend {
+    position:absolute; bottom:16px; right:16px; background:rgba(19,20,22,0.92); backdrop-filter:blur(8px);
+    border:1px solid var(--border); border-radius:8px; padding:10px 14px; z-index:10;
+    font-size:11px; color:var(--muted); min-width:160px;
+  }
+  .legend h4 { margin:0 0 6px; font-size:10px; color:var(--fg); text-transform:uppercase; letter-spacing:0.8px; }
+  .legend .bar { display:flex; gap:2px; margin:4px 0; }
+  .legend .bar div { flex:1; height:10px; }
+  .legend .labels { display:flex; justify-content:space-between; font-size:10px; }
+
+  /* ───── Footer KPI strip ─────────────────────────────────────────────────── */
+  footer#bottom {
+    grid-area:footer; background:var(--panel); border-top:1px solid var(--border);
+    display:flex; align-items:stretch; padding:0 6px;
+  }
+  .kpi {
+    flex:1; padding:8px 14px; display:flex; flex-direction:column; justify-content:center;
+    border-right:1px solid var(--border); min-width:0;
+  }
+  .kpi:last-child { border-right:0; }
+  .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; }
+  .kpi-value { font:700 16px/1.1 inherit; color:var(--fg); margin-top:2px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kpi-value.big { font-size:20px; }
+  .kpi-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+
+  /* ───── Loading / pending states ─────────────────────────────────────────── */
+  .dimmer {
+    position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex;
+    align-items:center; justify-content:center; z-index:5; pointer-events:none;
+    opacity:0; transition:opacity 0.15s;
+  }
+  .dimmer.on { opacity:1; }
   .spinner {
-    width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--red);
-    border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block;
+    width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--red);
+    border-radius:50%; animation:spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .chat {
-    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px;
+  /* ───── Login-redirect bridge ────────────────────────────────────────────── */
+  #gate {
+    position:fixed; inset:0; background:var(--bg); display:flex;
+    align-items:center; justify-content:center; z-index:1000;
   }
-  .chat h2 { margin:0 0 12px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; }
-  .messages { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; max-height:60vh; overflow:auto; }
-  .msg { padding:12px 14px; border-radius:10px; white-space:pre-wrap; line-height:1.5; }
-  .msg.user { background:#22272e; align-self:flex-end; max-width:85%; }
-  .msg.bot { background:var(--panel2); border:1px solid var(--border); }
-  .msg.bot.pending { color:var(--muted); }
-  .ask-row { display:flex; gap:8px; }
-  .ask-row textarea {
-    flex:1; background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
-    padding:10px 12px; font:inherit; resize:vertical; min-height:44px; max-height:200px;
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: 52px 50vh 40vh 56px;
+           grid-template-areas: "header" "map" "rail" "footer"; }
+    aside#rail { border-right:0; border-top:1px solid var(--border); }
+    .combo input { width:220px; }
   }
-  .ask-row textarea:focus { outline:none; border-color:var(--accent); }
-  .ask-row button.send { background:var(--red); color:#fff; border:0; min-width:84px; }
-  .ask-row button.send:disabled { opacity:0.55; cursor:progress; }
-
-  footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
-
-  /* Markdown-ish */
-  .body code, .msg code { background:#0c0c0c; padding:1px 5px; border-radius:4px; font-size:13px; }
-  .body pre, .msg pre { background:#0c0c0c; padding:10px; border-radius:6px; overflow:auto; font-size:13px; }
-  .body table, .msg table { border-collapse:collapse; margin:8px 0; font-size:13px; }
-  .body th, .body td, .msg th, .msg td { border:1px solid var(--border); padding:4px 8px; text-align:left; }
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><span class="rc">Red Cross</span> Intel</div>
-  <div class="scope-row">
-    <select id="scopeType">
-      <option value="division">Division</option>
-      <option value="region">Region</option>
-      <option value="chapter">Chapter</option>
-    </select>
-    <div class="combo">
-      <input id="scopeNameInput" type="text" placeholder="Loading…" autocomplete="off" spellcheck="false" />
-      <div id="scopeNamePanel" class="combo-panel" hidden></div>
+<div id="gate"><div class="spinner"></div></div>
+
+<div id="app" hidden>
+  <header id="top">
+    <div class="brand"><span class="pulse"></span><span class="rc">Red Cross</span> Intel</div>
+    <div class="scope-row">
+      <div class="type-tabs" role="tablist">
+        <button data-type="division" class="active">Division</button>
+        <button data-type="region">Region</button>
+        <button data-type="chapter">Chapter</button>
+      </div>
+      <div class="combo">
+        <input id="scopeNameInput" type="text" placeholder="Loading…" autocomplete="off" spellcheck="false" />
+        <div id="scopeNamePanel" class="combo-panel" hidden></div>
+      </div>
     </div>
-  </div>
-  <div class="sep"></div>
-  <button class="btn-ghost" id="logout">Sign out</button>
-</header>
+    <div class="sep"></div>
+    <button class="icon-btn" id="logout">Sign out</button>
+  </header>
 
-<main>
-  <div id="empty" class="empty">
-    <h2>Pick a scope</h2>
-    <p>Select a division, region, or chapter above to load a briefing dashboard. Then ask anything below.</p>
-  </div>
+  <aside id="rail">
+    <div class="rail-empty" id="railEmpty">
+      <strong>Pick a scope to begin</strong>
+      Select a division, region, or chapter above. The map will load its counties and an AI briefing will synthesize.
+    </div>
 
-  <div id="dashboard" class="grid" hidden></div>
+    <div class="section" id="briefingSection" hidden>
+      <h3><span class="dot"></span>Executive briefing</h3>
+      <div id="briefing" class="loading">Synthesizing…<div class="shimmer"></div></div>
+    </div>
 
-  <section id="chatSection" class="chat" hidden>
-    <h2>Ask anything — scoped to your selection</h2>
-    <div id="messages" class="messages"></div>
-    <form id="askForm" class="ask-row">
-      <textarea id="q" placeholder="e.g. Which counties should we prioritize for hurricane pre-positioning?" rows="2" required></textarea>
-      <button class="send" type="submit" id="sendBtn">Ask</button>
-    </form>
-  </section>
-</main>
+    <div class="section" id="top5Section" hidden>
+      <h3><span class="dot"></span>Top 5 counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span></h3>
+      <div id="top5"></div>
+    </div>
 
-<footer>Alpha · powered by <code>explorer.jbf.com/api/smart-query</code></footer>
+    <div class="section" id="chatSection" hidden>
+      <h3><span class="dot"></span>Ask anything</h3>
+      <div id="messages"></div>
+      <form id="askForm">
+        <textarea id="q" placeholder="Ask about this scope…" rows="1"></textarea>
+        <button class="send" type="submit" id="sendBtn">→</button>
+      </form>
+    </div>
+  </aside>
+
+  <main id="mapwrap">
+    <div id="map"></div>
+    <div class="map-overlay">
+      <div class="chip-row" id="metricChips">
+        <button class="map-chip active" data-metric="risk_score">Overall risk</button>
+        <button class="map-chip" data-metric="pct_struggling">Vulnerability</button>
+        <button class="map-chip" data-metric="hurricane_risk">Hurricane</button>
+        <button class="map-chip" data-metric="flood_risk">Flood</button>
+        <button class="map-chip" data-metric="wildfire_risk">Wildfire</button>
+        <button class="map-chip" data-metric="tornado_risk">Tornado</button>
+        <button class="map-chip" data-metric="heat_wave_risk">Heat</button>
+        <button class="map-chip" data-metric="expected_annual_loss">Annual $ loss</button>
+      </div>
+    </div>
+    <div class="legend" id="legend" hidden>
+      <h4 id="legendTitle">Overall risk</h4>
+      <div class="bar" id="legendBar"></div>
+      <div class="labels" id="legendLabels"><span>0</span><span>100</span></div>
+    </div>
+    <div class="dimmer" id="dimmer"><div class="spinner"></div></div>
+  </main>
+
+  <footer id="bottom">
+    <div class="kpi"><div class="kpi-label">Counties</div><div class="kpi-value big" id="kpiCounties">—</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div>
+    <div class="kpi"><div class="kpi-label">Avg risk</div><div class="kpi-value" id="kpiRisk">—</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div>
+    <div class="kpi"><div class="kpi-label">% struggling</div><div class="kpi-value" id="kpiStruggling">—</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div>
+    <div class="kpi"><div class="kpi-label">Top hazard</div><div class="kpi-value" id="kpiHazard">—</div><div class="kpi-sub" id="kpiHazardVal">&nbsp;</div></div>
+    <div class="kpi"><div class="kpi-label">Est. annual $ loss</div><div class="kpi-value" id="kpiEAL">—</div><div class="kpi-sub">across scope</div></div>
+  </footer>
+</div>
 
 <script>
 // ───── Gate: ensure authed ───────────────────────────────────────────────────
 (async () => {
-  const r = await fetch("/api/me", { cache: "no-store" });
-  if (!r.ok) location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch("/api/me", { cache: "no-store" });
+    if (!r.ok) {
+      location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+      return;
+    }
+    document.getElementById("gate").remove();
+    document.getElementById("app").hidden = false;
+    bootstrap();
+  } catch (e) {
+    location.href = "/login";
+  }
 })();
 
-// ───── Minimal markdown renderer ─────────────────────────────────────────────
+// ───── Minimal markdown renderer for chat ────────────────────────────────────
 function mdToHtml(md) {
   if (!md) return "";
   const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
@@ -152,48 +308,97 @@ function mdToHtml(md) {
   out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
   out = out.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   out = out.replace(/\*(.+?)\*/g, "<em>$1</em>");
-  out = out.replace(/^### (.+)$/gm, "<h4>$1</h4>");
-  out = out.replace(/^## (.+)$/gm, "<h3>$1</h3>");
-  out = out.replace(/^# (.+)$/gm, "<h3>$1</h3>");
   return out.replace(/\n/g, "<br>");
 }
 
-// ───── Scope loading ─────────────────────────────────────────────────────────
-let scopes = null;
-let scopeList = [];         // current filtered view
-let activeIndex = -1;
-const scopeType = document.getElementById("scopeType");
-const scopeInput = document.getElementById("scopeNameInput");
-const scopePanel = document.getElementById("scopeNamePanel");
-const empty = document.getElementById("empty");
-const dashboard = document.getElementById("dashboard");
-const chatSection = document.getElementById("chatSection");
+// ───── State ─────────────────────────────────────────────────────────────────
+const HAZARD_PRETTY = {
+  hurricane_risk: "Hurricane", flood_risk: "Flood", coastal_flood_risk: "Coastal flood",
+  wildfire_risk: "Wildfire", tornado_risk: "Tornado", earthquake_risk: "Earthquake",
+  heat_wave_risk: "Heat wave", winter_storm_risk: "Winter storm", drought_risk: "Drought",
+  strong_wind_risk: "Strong wind",
+};
+const HAZARD_KEYS = Object.keys(HAZARD_PRETTY);
 
+// Color ramps (dark → bright)
+const RAMPS = {
+  red:   ["#1a1a1a", "#4a1419", "#8a1f2a", "#c42740", "#ED1B2E"],
+  amber: ["#1a1a1a", "#4a3014", "#8a5a1f", "#c48827", "#f7a81b"],
+  teal:  ["#1a1a1a", "#133636", "#1f5a5a", "#278a8a", "#3fc4c4"],
+};
+const METRIC_META = {
+  risk_score:          { label: "Overall risk",        min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
+  pct_struggling:      { label: "% struggling (ALICE+poverty)", min:15, max:65, ramp: "amber", fmt: (v)=>v?.toFixed(1)+"%" },
+  hurricane_risk:      { label: "Hurricane risk",      min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
+  flood_risk:          { label: "Flood risk",          min:0,  max:100, ramp: "teal",  fmt: (v)=>v?.toFixed(0) },
+  wildfire_risk:       { label: "Wildfire risk",       min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
+  tornado_risk:        { label: "Tornado risk",        min:0,  max:100, ramp: "amber", fmt: (v)=>v?.toFixed(0) },
+  heat_wave_risk:      { label: "Heat-wave risk",      min:0,  max:100, ramp: "amber", fmt: (v)=>v?.toFixed(0) },
+  expected_annual_loss:{ label: "Expected annual loss", min:0, max:5e8, ramp: "red",   fmt: (v)=>"$"+shortNum(v) },
+};
+function shortNum(v) {
+  if (v == null) return "—";
+  if (v >= 1e9) return (v/1e9).toFixed(1)+"B";
+  if (v >= 1e6) return (v/1e6).toFixed(1)+"M";
+  if (v >= 1e3) return (v/1e3).toFixed(0)+"K";
+  return String(Math.round(v));
+}
+function fmtNum(v) { return v == null ? "—" : Math.round(v).toLocaleString(); }
+
+let scopes = null;
+let scopeList = [];
+let activeScope = null;
+let activeMetric = "risk_score";
+let countyData = null;   // { rows, national }
+let activeComboIdx = -1;
+let chatHistory = [];
+let mapView, countyLayer, outlineLayer;
+let arcgisMods = null; // lazy-loaded ArcGIS modules
+
+// ───── Bootstrap ─────────────────────────────────────────────────────────────
+async function bootstrap() {
+  await loadScopes();
+  initScopeUI();
+  initMetricChips();
+  initChat();
+  initLogout();
+  await initMap();
+  // Pre-select a marquee division so the demo lands with data visible
+  const se = scopes.divisions.find(d => d.name === "Southeast and Caribbean Division");
+  if (se) {
+    setType("division");
+    document.getElementById("scopeNameInput").value = se.name;
+    activateScope({ type:"division", name:se.name, code:se.code });
+  }
+}
+
+// ───── Scope API ─────────────────────────────────────────────────────────────
 async function loadScopes() {
   const r = await fetch("/api/scopes");
-  if (!r.ok) {
-    scopeInput.placeholder = "Error loading scopes";
-    return;
-  }
+  if (!r.ok) throw new Error("Failed to load scopes");
   scopes = await r.json();
+}
+
+const typeTabs = document.querySelectorAll(".type-tabs button");
+function setType(t) {
+  typeTabs.forEach(b => b.classList.toggle("active", b.dataset.type === t));
   onScopeTypeChange();
 }
+typeTabs.forEach(b => b.addEventListener("click", () => setType(b.dataset.type)));
 
-function currentList() {
-  const t = scopeType.value;
-  return scopes?.[t + "s"] || [];
+function currentType() {
+  return document.querySelector(".type-tabs button.active").dataset.type;
 }
 
+const scopeInput = document.getElementById("scopeNameInput");
+const scopePanel = document.getElementById("scopeNamePanel");
+
 function onScopeTypeChange() {
-  const t = scopeType.value;
-  scopeList = currentList();
+  const t = currentType();
+  scopeList = scopes[t + "s"] || [];
   scopeInput.value = "";
   scopeInput.placeholder = `Search ${scopeList.length} ${t}${scopeList.length === 1 ? "" : "s"}…`;
   hidePanel();
-  // clear dashboard when switching type
-  empty.hidden = false;
-  dashboard.hidden = true;
-  chatSection.hidden = true;
 }
 
 function renderPanel(q) {
@@ -203,198 +408,435 @@ function renderPanel(q) {
     : scopeList.map((s, i) => ({ ...s, _i: i }));
   if (!matches.length) {
     scopePanel.innerHTML = `<div class="combo-empty">No matches</div>`;
-    scopePanel.hidden = false;
-    activeIndex = -1;
-    return;
+    scopePanel.hidden = false; activeComboIdx = -1; return;
   }
-  const t = scopeType.value;
+  const t = currentType();
   const sub = (s) => t === "chapter" ? ` <span class="muted">· ${s.region || ""}</span>`
                    : t === "region"  ? ` <span class="muted">· ${s.division || ""}</span>`
                    : "";
   scopePanel.innerHTML = matches.slice(0, 300).map((s, idx) =>
-    `<div class="combo-option${idx === 0 ? " active" : ""}" data-i="${s._i}">${s.name}${sub(s)}</div>`
+    `<div class="combo-option${idx===0?" active":""}" data-i="${s._i}">${s.name}${sub(s)}</div>`
   ).join("");
   scopePanel.hidden = false;
-  activeIndex = 0;
+  activeComboIdx = 0;
 }
+function hidePanel() { scopePanel.hidden = true; activeComboIdx = -1; }
 
-function hidePanel() {
-  scopePanel.hidden = true;
-  activeIndex = -1;
+function initScopeUI() {
+  onScopeTypeChange();
+  scopeInput.addEventListener("focus", () => renderPanel(scopeInput.value));
+  scopeInput.addEventListener("input", () => renderPanel(scopeInput.value));
+  scopeInput.addEventListener("blur",  () => setTimeout(hidePanel, 150));
+  scopeInput.addEventListener("keydown", (e) => {
+    if (scopePanel.hidden) return;
+    const opts = scopePanel.querySelectorAll(".combo-option");
+    if (e.key === "ArrowDown") { e.preventDefault(); activeComboIdx = Math.min(activeComboIdx+1, opts.length-1); updateActiveOpt(opts); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); activeComboIdx = Math.max(activeComboIdx-1, 0); updateActiveOpt(opts); }
+    else if (e.key === "Enter") { e.preventDefault(); const el = opts[activeComboIdx]; if (el) pickScope(Number(el.dataset.i)); }
+    else if (e.key === "Escape") { hidePanel(); scopeInput.blur(); }
+  });
+  scopePanel.addEventListener("mousedown", (e) => {
+    const el = e.target.closest(".combo-option");
+    if (!el) return;
+    e.preventDefault(); pickScope(Number(el.dataset.i));
+  });
 }
-
+function updateActiveOpt(opts) {
+  opts.forEach((el, i) => el.classList.toggle("active", i === activeComboIdx));
+  opts[activeComboIdx]?.scrollIntoView({ block:"nearest" });
+}
 function pickScope(i) {
-  const s = scopeList[i];
-  if (!s) return;
-  scopeInput.value = s.name;
-  hidePanel();
-  activateScope({ type: scopeType.value, name: s.name, code: s.code, region: s.region, division: s.division });
+  const s = scopeList[i]; if (!s) return;
+  scopeInput.value = s.name; hidePanel();
+  activateScope({ type: currentType(), name: s.name, code: s.code, region: s.region, division: s.division });
 }
 
-scopeType.addEventListener("change", onScopeTypeChange);
-
-scopeInput.addEventListener("focus", () => renderPanel(scopeInput.value));
-scopeInput.addEventListener("input", () => renderPanel(scopeInput.value));
-scopeInput.addEventListener("blur", () => setTimeout(hidePanel, 150));
-
-scopeInput.addEventListener("keydown", (e) => {
-  if (scopePanel.hidden) return;
-  const options = scopePanel.querySelectorAll(".combo-option");
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    activeIndex = Math.min(activeIndex + 1, options.length - 1);
-    options.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
-    options[activeIndex]?.scrollIntoView({ block: "nearest" });
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    activeIndex = Math.max(activeIndex - 1, 0);
-    options.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
-    options[activeIndex]?.scrollIntoView({ block: "nearest" });
-  } else if (e.key === "Enter") {
-    e.preventDefault();
-    const el = options[activeIndex];
-    if (el) pickScope(Number(el.dataset.i));
-  } else if (e.key === "Escape") {
-    hidePanel();
-    scopeInput.blur();
-  }
-});
-
-scopePanel.addEventListener("mousedown", (e) => {
-  const el = e.target.closest(".combo-option");
-  if (!el) return;
-  e.preventDefault();
-  pickScope(Number(el.dataset.i));
-});
-
-// ───── Dashboard tiles ───────────────────────────────────────────────────────
-const TILES = [
-  { key: "vuln",   title: "Counties in worst 20% nationally", prompt: "Using supabase_sql on county_rankings: (1) compute the 80th percentile of pct_struggling across ALL counties nationwide (no scope filter); (2) count counties IN SCOPE where pct_struggling >= that percentile; (3) identify the scope county with the highest pct_struggling. Respond with EXACTLY three lines, no preamble, no code fence:\n## <N>\ncounties in worst 20% nationally (struggling)\nTop: <county>, <state> (<pct>%)" },
-  { key: "hazard", title: "Leading hazard (avg risk)",  prompt: "Using supabase_sql on county_rankings, compute AVG of each: hurricane_risk, wildfire_risk, flood_risk, coastal_flood_risk, tornado_risk, earthquake_risk, heat_wave_risk, winter_storm_risk across scope counties. Pick the hazard with the highest average (scores are 0-100). Find the county with the highest value of that specific hazard_risk column. Respond with EXACTLY three lines, no preamble:\n## <Hazard name, e.g. Hurricane>\navg risk <X.X> / 100\nLead: <county>, <state> (<score>)" },
-  { key: "alice",  title: "ALICE + poverty households", prompt: "Using supabase_sql, for counties in scope compute the sum of (pct_struggling * population / 100) as total struggling households. Find the top county by that same calculation. Respond with EXACTLY three lines, no preamble:\n## <total, rounded, with commas>\nALICE + poverty households\nTop: <county>, <state> (<count, rounded>)" },
-  { key: "fema",   title: "FEMA declarations (since 2020)", prompt: "Using supabase_sql on fema_declarations, count total declarations covering any county in scope since 2020, and identify the single most common incident_type. Respond with EXACTLY three lines, no preamble:\n## <N>\nFEMA declarations since 2020\nMost common: <incident_type>" },
-  { key: "fire",   title: "Fires without RC response (2024)", prompt: "Using agol_query on the flare_fire_incidents layer, filter to Master_Label = 'No RC Notification' and incidents in CY2024 whose county belongs to this scope. Count total, name the chapter (within scope) with the most. Respond with EXACTLY three lines, no preamble:\n## <N>\nfires w/o RC notification (CY2024)\nWorst chapter: <chapter name>" },
-];
-
-function cacheKey(scope, tileKey) {
-  return `intel:tile:v3:${scope.type}:${scope.code || scope.name}:${tileKey}`;
+// ───── Metric chips ──────────────────────────────────────────────────────────
+function initMetricChips() {
+  document.querySelectorAll(".map-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".map-chip").forEach(c => c.classList.toggle("active", c === chip));
+      activeMetric = chip.dataset.metric;
+      renderChoropleth();
+      renderTop5();
+      renderLegend();
+      updateKPIs();
+    });
+  });
 }
 
-function chatCacheKey(scope) {
-  return `intel:chat:${scope.type}:${scope.code || scope.name}`;
+// ───── Map init ──────────────────────────────────────────────────────────────
+async function initMap() {
+  arcgisMods = await loadArcGIS();
+  const { Map, MapView, GraphicsLayer, FeatureLayer } = arcgisMods;
+  const map = new Map({ basemap: "dark-gray-vector" });
+  countyLayer = new GraphicsLayer({ id: "counties" });
+  outlineLayer = new GraphicsLayer({ id: "outline" });
+  map.addMany([countyLayer, outlineLayer]);
+  mapView = new MapView({
+    container: "map",
+    map,
+    center: [-96, 38],
+    zoom: 4,
+    constraints: { snapToZoom: false },
+    ui: { components: ["zoom", "compass"] },
+  });
+  mapView.on("pointer-move", () => {}); // keep hit-tests alive
+  mapView.popup.defaultPopupTemplateEnabled = false;
 }
 
-async function runTile(scope, tile) {
-  const host = document.querySelector(`#tile-${tile.key} .body`);
-  const cached = localStorage.getItem(cacheKey(scope, tile.key));
+function loadArcGIS() {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://js.arcgis.com/4.32/";
+    script.onload = () => {
+      require([
+        "esri/Map","esri/views/MapView","esri/layers/GraphicsLayer",
+        "esri/layers/FeatureLayer","esri/Graphic","esri/geometry/Polygon",
+        "esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol",
+        "esri/rest/query","esri/rest/support/Query",
+      ], (Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query) => {
+        resolve({ Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query });
+      });
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+// ───── Scope activation ──────────────────────────────────────────────────────
+function showDimmer(on) { document.getElementById("dimmer").classList.toggle("on", on); }
+
+async function activateScope(scope) {
+  activeScope = scope;
+  document.getElementById("railEmpty").hidden = true;
+  document.getElementById("briefingSection").hidden = false;
+  document.getElementById("top5Section").hidden = false;
+  document.getElementById("chatSection").hidden = false;
+
+  showDimmer(true);
+  // Fire everything in parallel — brief, data, outline
+  const [, data] = await Promise.all([
+    renderBriefing(scope),
+    fetchCountyData(scope),
+    drawScopeOutline(scope),
+  ]);
+  countyData = data;
+  await renderChoropleth();
+  renderTop5();
+  renderLegend();
+  updateKPIs();
+  loadChat(scope);
+  showDimmer(false);
+}
+
+async function fetchCountyData(scope) {
+  const u = new URLSearchParams({ type: scope.type, name: scope.name, code: scope.code || "" });
+  const r = await fetch(`/api/county-data?${u}`);
+  if (!r.ok) { console.error("county-data failed", await r.text()); return null; }
+  return r.json();
+}
+
+// ───── Briefing ──────────────────────────────────────────────────────────────
+async function renderBriefing(scope) {
+  const briefEl = document.getElementById("briefing");
+  const key = `intel:brief:${scope.type}:${scope.code || scope.name}`;
+  const cached = localStorage.getItem(key);
   if (cached) {
-    host.innerHTML = mdToHtml(cached);
+    briefEl.classList.remove("loading");
+    briefEl.textContent = cached;
     return;
   }
-  host.innerHTML = `<span class="spinner"></span> Thinking…`;
+  briefEl.classList.add("loading");
+  briefEl.innerHTML = "Synthesizing…<div class=\"shimmer\"></div>";
   try {
-    const r = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: tile.prompt, scope }),
+    const r = await fetch("/api/briefing", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ scope })
     });
-    if (!r.ok) {
-      host.innerHTML = `<em style="color:#ff8080">Error ${r.status}</em>`;
-      return;
-    }
     const j = await r.json();
-    host.innerHTML = mdToHtml(j.answer || "(no answer)");
-    if (j.answer) localStorage.setItem(cacheKey(scope, tile.key), j.answer);
+    const text = (j.answer || j.error || "").trim();
+    briefEl.classList.remove("loading");
+    briefEl.textContent = text;
+    if (j.answer) localStorage.setItem(key, j.answer);
   } catch (e) {
-    host.innerHTML = `<em style="color:#ff8080">${e.message}</em>`;
+    briefEl.classList.remove("loading");
+    briefEl.textContent = "Briefing unavailable — try the chat below.";
   }
 }
 
-function renderDashboardSkeleton(scope) {
-  dashboard.innerHTML = TILES.map(t => `
-    <div class="tile" id="tile-${t.key}">
-      <div class="title">${t.title}</div>
-      <div class="body"><span class="spinner"></span></div>
+// ───── Scope outline on map ──────────────────────────────────────────────────
+async function drawScopeOutline(scope) {
+  if (!arcgisMods) return;
+  const { Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
+  outlineLayer.removeAll();
+
+  const ARC = "https://services.arcgis.com/pGfbNJoYypmNq86F/arcgis/rest/services/Master_ARC_Geography_2022/FeatureServer/";
+  const layerByType = { division: "1", region: "2", chapter: "3" };
+  const fieldByType = { division: "Division", region: "Region", chapter: "Chapter" };
+  const url = ARC + layerByType[scope.type];
+  const field = fieldByType[scope.type];
+  const esc = (s) => String(s).replace(/'/g, "''");
+
+  const q = new Query({
+    where: `${field} = '${esc(scope.name)}'`,
+    returnGeometry: true,
+    outFields: ["*"],
+    outSpatialReference: { wkid: 102100 },
+  });
+
+  try {
+    const result = await query.executeQueryJSON(url, q);
+    if (!result.features.length) return;
+    const sym = new SimpleFillSymbol({
+      color: [237, 27, 46, 0.08],
+      outline: new SimpleLineSymbol({ color: [237, 27, 46, 0.95], width: 2.5 }),
+    });
+    let fullExtent = null;
+    for (const f of result.features) {
+      const g = new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes });
+      outlineLayer.add(g);
+      if (f.geometry.extent) {
+        fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
+      }
+    }
+    if (fullExtent) mapView.goTo(fullExtent.expand(1.1), { duration: 900, easing: "ease-in-out" });
+  } catch (e) {
+    console.error("outline draw failed", e);
+  }
+}
+
+// ───── Choropleth ────────────────────────────────────────────────────────────
+async function renderChoropleth() {
+  if (!countyData || !arcgisMods) return;
+  const { Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
+  countyLayer.removeAll();
+
+  const fipsByRow = new Map();
+  for (const r of countyData.rows || []) {
+    if (r.county_fips) fipsByRow.set(String(r.county_fips).padStart(5, "0"), r);
+  }
+  if (!fipsByRow.size) return;
+
+  const COUNTY_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Counties_Generalized_Boundaries/FeatureServer/0";
+  const fipsList = [...fipsByRow.keys()].map(x => `'${x}'`).join(",");
+  const q = new Query({
+    where: `FIPS IN (${fipsList})`,
+    returnGeometry: true,
+    outFields: ["FIPS", "NAME", "STATE_NAME"],
+    outSpatialReference: { wkid: 102100 },
+  });
+  let result;
+  try {
+    result = await query.executeQueryJSON(COUNTY_URL, q);
+  } catch (e) {
+    console.error("county query failed, trying fallback", e);
+    return;
+  }
+
+  const meta = METRIC_META[activeMetric];
+  const ramp = RAMPS[meta.ramp];
+
+  for (const f of result.features) {
+    const fips = String(f.attributes.FIPS).padStart(5, "0");
+    const row = fipsByRow.get(fips);
+    if (!row) continue;
+    const v = Number(row[activeMetric]);
+    const color = valueToColor(v, meta, ramp);
+    const sym = new SimpleFillSymbol({
+      color,
+      outline: new SimpleLineSymbol({ color: [0, 0, 0, 0.35], width: 0.4 }),
+    });
+    const g = new Graphic({
+      geometry: f.geometry,
+      symbol: sym,
+      attributes: { ...row, __display_name: `${row.county_name}, ${row.state_abbr}` },
+      popupTemplate: {
+        title: "{county_name}, {state_abbr}",
+        content: countyPopup,
+      },
+    });
+    countyLayer.add(g);
+  }
+}
+
+function valueToColor(v, meta, ramp) {
+  if (v == null || Number.isNaN(v)) return [60, 60, 60, 0.25];
+  const t = Math.max(0, Math.min(1, (v - meta.min) / (meta.max - meta.min)));
+  const idx = Math.min(ramp.length - 1, Math.floor(t * (ramp.length - 0.001)));
+  const hex = ramp[idx];
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
+  return [r, g, b, 0.72];
+}
+
+function countyPopup(feature) {
+  const a = feature.graphic.attributes;
+  const pct = a.pct_struggling != null ? a.pct_struggling.toFixed(1) + "%" : "—";
+  const risk = a.risk_score != null ? a.risk_score.toFixed(0) : "—";
+  const eal = a.expected_annual_loss != null ? "$" + shortNum(a.expected_annual_loss) : "—";
+  const hazards = HAZARD_KEYS
+    .map(k => ({ k, v: a[k] }))
+    .filter(x => x.v != null)
+    .sort((x, y) => y.v - x.v)
+    .slice(0, 3)
+    .map(x => `<span style="background:#2a2a2a;padding:2px 6px;border-radius:3px;margin-right:4px;font-size:11px;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`)
+    .join("");
+  return `
+    <div style="font:13px/1.4 sans-serif;">
+      <div style="display:flex;gap:12px;margin-bottom:8px;">
+        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">Population</div><div style="font-weight:700;">${fmtNum(a.population)}</div></div>
+        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">Risk</div><div style="font-weight:700;">${risk}</div></div>
+        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">Struggling</div><div style="font-weight:700;">${pct}</div></div>
+        <div><div style="font-size:10px;color:#999;text-transform:uppercase;">EAL</div><div style="font-weight:700;">${eal}</div></div>
+      </div>
+      <div style="font-size:10px;color:#999;text-transform:uppercase;margin-bottom:4px;">Top hazards</div>
+      <div>${hazards || "<em>none ranked</em>"}</div>
+      <div style="margin-top:8px;font-size:11px;color:#999;">Chapter: <span style="color:#fff;">${a.chapter || "—"}</span></div>
     </div>
-  `).join("");
+  `;
+}
+
+// ───── Legend ────────────────────────────────────────────────────────────────
+function renderLegend() {
+  const meta = METRIC_META[activeMetric];
+  const ramp = RAMPS[meta.ramp];
+  document.getElementById("legend").hidden = false;
+  document.getElementById("legendTitle").textContent = meta.label;
+  document.getElementById("legendBar").innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join("");
+  document.getElementById("legendLabels").innerHTML =
+    `<span>${meta.fmt(meta.min)}</span><span>${meta.fmt(meta.max)}</span>`;
+}
+
+// ───── Top 5 ─────────────────────────────────────────────────────────────────
+function renderTop5() {
+  if (!countyData) return;
+  const meta = METRIC_META[activeMetric];
+  document.getElementById("top5MetricLabel").textContent = `by ${meta.label.toLowerCase()}`;
+  const rows = [...(countyData.rows || [])]
+    .filter(r => r[activeMetric] != null)
+    .sort((a, b) => b[activeMetric] - a[activeMetric])
+    .slice(0, 5);
+  const host = document.getElementById("top5");
+  host.innerHTML = rows.map((r, i) => `
+    <div class="top5-row" data-fips="${r.county_fips}">
+      <div class="top5-rank">${i+1}</div>
+      <div class="top5-name">${r.county_name} <span class="state">${r.state_abbr}</span></div>
+      <div class="top5-val">${meta.fmt(r[activeMetric])}</div>
+    </div>`).join("");
+  host.querySelectorAll(".top5-row").forEach(row => {
+    row.addEventListener("click", () => zoomToFips(row.dataset.fips));
+  });
+}
+
+function zoomToFips(fips) {
+  if (!countyLayer) return;
+  const g = countyLayer.graphics.find(x => String(x.attributes.county_fips).padStart(5,"0") === String(fips).padStart(5,"0"));
+  if (!g) return;
+  mapView.goTo({ target: g.geometry, zoom: Math.max(mapView.zoom, 8) }, { duration: 700 });
+  mapView.popup.open({ features: [g], location: g.geometry.centroid });
+}
+
+// ───── KPI strip ─────────────────────────────────────────────────────────────
+function updateKPIs() {
+  if (!countyData) return;
+  const rows = countyData.rows || [];
+  const popTotal = rows.reduce((s, r) => s + (r.population || 0), 0);
+  const riskAvg = avg(rows.map(r => r.risk_score));
+  const struggAvg = avg(rows.map(r => r.pct_struggling));
+  const ealSum = rows.reduce((s, r) => s + (r.expected_annual_loss || 0), 0);
+
+  document.getElementById("kpiCounties").textContent = rows.length;
+  document.getElementById("kpiPopulation").textContent = popTotal ? `${fmtNum(popTotal)} people` : "";
+  document.getElementById("kpiRisk").textContent = riskAvg != null ? riskAvg.toFixed(0) : "—";
+  document.getElementById("kpiStruggling").textContent = struggAvg != null ? struggAvg.toFixed(1) + "%" : "—";
+  document.getElementById("kpiEAL").textContent = "$" + shortNum(ealSum);
+
+  // National benchmark
+  const nat = countyData.national || {};
+  if (riskAvg != null && nat.p50_risk != null) {
+    const delta = riskAvg - nat.p50_risk;
+    document.getElementById("kpiRiskPctl").textContent =
+      `${delta >= 0 ? "+" : ""}${delta.toFixed(0)} vs US median`;
+  }
+  if (struggAvg != null && nat.p50_struggling != null) {
+    const delta = struggAvg - nat.p50_struggling;
+    document.getElementById("kpiStrugglingPctl").textContent =
+      `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}pp vs US median`;
+  }
+
+  // Top hazard: highest average hazard score in scope
+  const hazAvgs = HAZARD_KEYS.map(k => ({ k, v: avg(rows.map(r => r[k])) })).filter(x => x.v != null);
+  hazAvgs.sort((a, b) => b.v - a.v);
+  const top = hazAvgs[0];
+  if (top) {
+    document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k];
+    document.getElementById("kpiHazardVal").textContent = `avg ${top.v.toFixed(0)}/100`;
+  }
+}
+function avg(arr) {
+  const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number);
+  return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
 }
 
 // ───── Chat ──────────────────────────────────────────────────────────────────
-const messagesEl = document.getElementById("messages");
-const askForm = document.getElementById("askForm");
-const qEl = document.getElementById("q");
-const sendBtn = document.getElementById("sendBtn");
-let currentScope = null;
-let history = [];
-
-function renderHistory() {
-  messagesEl.innerHTML = history.map(m =>
-    `<div class="msg ${m.role}${m.pending ? " pending" : ""}">${m.role === "user" ? m.text.replace(/</g,"&lt;") : mdToHtml(m.text)}</div>`
-  ).join("");
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
+function chatKey(scope) { return `intel:chat:v3:${scope.type}:${scope.code || scope.name}`; }
 function loadChat(scope) {
-  const raw = localStorage.getItem(chatCacheKey(scope));
-  history = raw ? JSON.parse(raw) : [];
-  renderHistory();
+  try { chatHistory = JSON.parse(localStorage.getItem(chatKey(scope)) || "[]"); }
+  catch { chatHistory = []; }
+  renderChat();
+}
+function saveChat(scope) { localStorage.setItem(chatKey(scope), JSON.stringify(chatHistory.slice(-30))); }
+
+function renderChat() {
+  const el = document.getElementById("messages");
+  el.innerHTML = chatHistory.map(m =>
+    `<div class="msg ${m.role}${m.pending ? " pending" : ""}">${m.role === "user" ? (m.text || "").replace(/</g,"&lt;") : mdToHtml(m.text || "")}</div>`
+  ).join("");
+  el.scrollTop = el.scrollHeight;
 }
 
-function saveChat(scope) {
-  localStorage.setItem(chatCacheKey(scope), JSON.stringify(history.slice(-30)));
-}
-
-askForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!currentScope) return;
-  const text = qEl.value.trim();
-  if (!text) return;
-  qEl.value = "";
-  sendBtn.disabled = true;
-  history.push({ role: "user", text });
-  history.push({ role: "bot", text: "Thinking…", pending: true });
-  renderHistory();
-  try {
-    const r = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: text, scope: currentScope }),
-    });
-    const j = await r.json();
-    history.pop(); // remove pending
-    if (!r.ok) {
-      history.push({ role: "bot", text: `Error ${r.status}: ${j.error || "unknown"}` });
-    } else {
-      history.push({ role: "bot", text: j.answer || "(no answer)" });
+function initChat() {
+  const form = document.getElementById("askForm");
+  const q = document.getElementById("q");
+  const btn = document.getElementById("sendBtn");
+  q.addEventListener("input", () => { q.style.height = "auto"; q.style.height = Math.min(100, q.scrollHeight) + "px"; });
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!activeScope) return;
+    const text = q.value.trim(); if (!text) return;
+    q.value = ""; q.style.height = "auto"; btn.disabled = true;
+    chatHistory.push({ role:"user", text });
+    chatHistory.push({ role:"bot", text:"Thinking…", pending:true });
+    renderChat();
+    try {
+      const r = await fetch("/api/ask", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ question: text, scope: activeScope }),
+      });
+      const j = await r.json();
+      chatHistory.pop();
+      chatHistory.push({ role:"bot", text: r.ok ? (j.answer || "(no answer)") : `Error: ${j.error || r.status}` });
+    } catch (x) {
+      chatHistory.pop();
+      chatHistory.push({ role:"bot", text: "Network error: " + x.message });
     }
-  } catch (x) {
-    history.pop();
-    history.push({ role: "bot", text: `Network error: ${x.message}` });
-  }
-  saveChat(currentScope);
-  renderHistory();
-  sendBtn.disabled = false;
-});
-
-// ───── Scope activation ──────────────────────────────────────────────────────
-function activateScope(scope) {
-  currentScope = scope;
-  empty.hidden = true;
-  dashboard.hidden = false;
-  chatSection.hidden = false;
-  renderDashboardSkeleton(scope);
-  loadChat(scope);
-  // Stagger to be gentle on the upstream
-  TILES.forEach((t, i) => setTimeout(() => runTile(scope, t), i * 250));
+    saveChat(activeScope);
+    renderChat();
+    btn.disabled = false;
+  });
 }
 
 // ───── Logout ────────────────────────────────────────────────────────────────
-document.getElementById("logout").addEventListener("click", async () => {
-  await fetch("/api/logout", { method: "POST" });
-  location.href = "/login";
-});
-
-loadScopes();
+function initLogout() {
+  document.getElementById("logout").addEventListener("click", async () => {
+    await fetch("/api/logout", { method:"POST" });
+    location.href = "/login";
+  });
+}
 </script>
 </body>
 </html>
