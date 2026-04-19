@@ -9,14 +9,14 @@
 // will be ignored here and will fall through to live synthesis until
 // re-generated offline.
 
-import { readFileSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
 import { isAuthed } from "./_auth.js";
 import { captureDataSnapshot } from "./_snapshot.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const CACHE_PATH = resolve(__dirname, "..", "data", "scope-briefings.json");
+// Vercel serverless functions run with cwd = deployment root (/var/task).
+// The data file is included via vercel.json `functions.includeFiles`.
+const CACHE_PATH = resolve(process.cwd(), "data", "scope-briefings.json");
 
 const MODEL = "claude-sonnet-4-5-20250929";
 const PROMPT_VERSION = "v1-2026-04-19";
@@ -125,32 +125,38 @@ async function liveSynthesize(scope) {
 }
 
 export default async function handler(req, res) {
-  if (!isAuthed(req)) return res.status(401).json({ error: "unauthenticated" });
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const { scope } = req.body || {};
-  if (!scope || !scope.name || !scope.type) {
-    return res.status(400).json({ error: "Missing scope {type, name, code}" });
-  }
-
-  // 1. Try the pre-generated cache first.
-  const hit = cacheLookup(scope);
-  if (hit) {
-    return res.status(200).json({
-      source: "cache",
-      briefing: hit.briefing,
-      data_snapshot: hit.data_snapshot,
-      prompt_version: hit.prompt_version,
-      generated_at: hit.generated_at,
-      model: hit.model,
-    });
-  }
-
-  // 2. Fall back to live synthesis.
   try {
-    const result = await liveSynthesize(scope);
-    return res.status(200).json({ source: "live", ...result });
+    if (!isAuthed(req)) return res.status(401).json({ error: "unauthenticated" });
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+    const { scope } = req.body || {};
+    if (!scope || !scope.name || !scope.type) {
+      return res.status(400).json({ error: "Missing scope {type, name, code}" });
+    }
+
+    // 1. Try the pre-generated cache first.
+    const hit = cacheLookup(scope);
+    if (hit) {
+      return res.status(200).json({
+        source: "cache",
+        briefing: hit.briefing,
+        data_snapshot: hit.data_snapshot,
+        prompt_version: hit.prompt_version,
+        generated_at: hit.generated_at,
+        model: hit.model,
+      });
+    }
+
+    // 2. Fall back to live synthesis.
+    try {
+      const result = await liveSynthesize(scope);
+      return res.status(200).json({ source: "live", ...result });
+    } catch (e) {
+      console.error("briefing live synth failed:", e?.stack || e);
+      return res.status(502).json({ error: `Synthesis failed: ${e.message}` });
+    }
   } catch (e) {
-    return res.status(502).json({ error: `Synthesis failed: ${e.message}` });
+    console.error("briefing handler crashed:", e?.stack || e);
+    return res.status(500).json({ error: `Internal error: ${e.message}` });
   }
 }
