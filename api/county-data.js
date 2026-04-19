@@ -59,7 +59,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const query = `SELECT ${FIELDS} FROM county_rankings WHERE ${where} ORDER BY risk_score DESC NULLS LAST LIMIT 500`;
+    // Largest division (Southeast & Caribbean) ~700 counties; 2000 leaves
+    // headroom without risking a 1M-row accidental scan.
+    const query = `SELECT ${FIELDS} FROM county_rankings WHERE ${where} ORDER BY risk_score DESC NULLS LAST LIMIT 2000`;
     const rows = await sql(query);
 
     // Also compute national percentiles for key metrics (so the UI can benchmark)
