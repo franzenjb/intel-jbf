@@ -3,10 +3,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/*.js": {
-      "maxDuration": 60
-    },
-    "api/briefing.js": {
+    "api/**/*.js": {
       "maxDuration": 60,
       "includeFiles": "data/**"
     }
