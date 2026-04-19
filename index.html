@@ -24,6 +24,23 @@
   }
   select:focus { outline:none; border-color:var(--accent); }
   .scope-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .combo { position:relative; }
+  .combo input {
+    background:#0c0c0c; color:var(--fg); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; font:inherit; min-width:280px;
+  }
+  .combo input:focus { outline:none; border-color:var(--accent); }
+  .combo-panel {
+    position:absolute; top:calc(100% + 4px); left:0; right:0;
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    max-height:320px; overflow-y:auto; z-index:10;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .combo-option { padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #222; }
+  .combo-option:last-child { border-bottom:0; }
+  .combo-option:hover, .combo-option.active { background:#262626; }
+  .combo-option .muted { color:var(--muted); font-size:11px; margin-left:6px; }
+  .combo-empty { padding:10px 12px; color:var(--muted); font-size:13px; }
   .btn-ghost { background:transparent; color:var(--muted); cursor:pointer; border:1px solid var(--border); }
   .btn-ghost:hover { color:var(--fg); border-color:var(--fg); }
 
@@ -90,9 +107,10 @@
       <option value="region">Region</option>
       <option value="chapter">Chapter</option>
     </select>
-    <select id="scopeName" style="min-width:260px;">
-      <option value="">Loading…</option>
-    </select>
+    <div class="combo">
+      <input id="scopeNameInput" type="text" placeholder="Loading…" autocomplete="off" spellcheck="false" />
+      <div id="scopeNamePanel" class="combo-panel" hidden></div>
+    </div>
   </div>
   <div class="sep"></div>
   <button class="btn-ghost" id="logout">Sign out</button>
@@ -142,8 +160,11 @@ function mdToHtml(md) {
 
 // ───── Scope loading ─────────────────────────────────────────────────────────
 let scopes = null;
+let scopeList = [];         // current filtered view
+let activeIndex = -1;
 const scopeType = document.getElementById("scopeType");
-const scopeName = document.getElementById("scopeName");
+const scopeInput = document.getElementById("scopeNameInput");
+const scopePanel = document.getElementById("scopeNamePanel");
 const empty = document.getElementById("empty");
 const dashboard = document.getElementById("dashboard");
 const chatSection = document.getElementById("chatSection");
@@ -151,38 +172,104 @@ const chatSection = document.getElementById("chatSection");
 async function loadScopes() {
   const r = await fetch("/api/scopes");
   if (!r.ok) {
-    scopeName.innerHTML = `<option>Error loading scopes</option>`;
+    scopeInput.placeholder = "Error loading scopes";
     return;
   }
   scopes = await r.json();
-  renderScopeNames();
+  onScopeTypeChange();
 }
 
-function renderScopeNames() {
+function currentList() {
   const t = scopeType.value;
-  const list = scopes[t + "s"] || [];
-  scopeName.innerHTML = `<option value="">— select ${t} —</option>` +
-    list.map((s, i) => `<option value="${i}">${s.name}</option>`).join("");
+  return scopes?.[t + "s"] || [];
 }
 
-scopeType.addEventListener("change", () => {
-  renderScopeNames();
-});
+function onScopeTypeChange() {
+  const t = scopeType.value;
+  scopeList = currentList();
+  scopeInput.value = "";
+  scopeInput.placeholder = `Search ${scopeList.length} ${t}${scopeList.length === 1 ? "" : "s"}…`;
+  hidePanel();
+  // clear dashboard when switching type
+  empty.hidden = false;
+  dashboard.hidden = true;
+  chatSection.hidden = true;
+}
 
-scopeName.addEventListener("change", () => {
-  const i = scopeName.value;
-  if (i === "") {
-    empty.hidden = false; dashboard.hidden = true; chatSection.hidden = true;
+function renderPanel(q) {
+  const qq = (q || "").trim().toLowerCase();
+  const matches = qq
+    ? scopeList.map((s, i) => ({ ...s, _i: i })).filter(s => s.name.toLowerCase().includes(qq))
+    : scopeList.map((s, i) => ({ ...s, _i: i }));
+  if (!matches.length) {
+    scopePanel.innerHTML = `<div class="combo-empty">No matches</div>`;
+    scopePanel.hidden = false;
+    activeIndex = -1;
     return;
   }
   const t = scopeType.value;
-  const s = scopes[t + "s"][Number(i)];
-  activateScope({ type: t, name: s.name, code: s.code, region: s.region, division: s.division });
+  const sub = (s) => t === "chapter" ? ` <span class="muted">· ${s.region || ""}</span>`
+                   : t === "region"  ? ` <span class="muted">· ${s.division || ""}</span>`
+                   : "";
+  scopePanel.innerHTML = matches.slice(0, 300).map((s, idx) =>
+    `<div class="combo-option${idx === 0 ? " active" : ""}" data-i="${s._i}">${s.name}${sub(s)}</div>`
+  ).join("");
+  scopePanel.hidden = false;
+  activeIndex = 0;
+}
+
+function hidePanel() {
+  scopePanel.hidden = true;
+  activeIndex = -1;
+}
+
+function pickScope(i) {
+  const s = scopeList[i];
+  if (!s) return;
+  scopeInput.value = s.name;
+  hidePanel();
+  activateScope({ type: scopeType.value, name: s.name, code: s.code, region: s.region, division: s.division });
+}
+
+scopeType.addEventListener("change", onScopeTypeChange);
+
+scopeInput.addEventListener("focus", () => renderPanel(scopeInput.value));
+scopeInput.addEventListener("input", () => renderPanel(scopeInput.value));
+scopeInput.addEventListener("blur", () => setTimeout(hidePanel, 150));
+
+scopeInput.addEventListener("keydown", (e) => {
+  if (scopePanel.hidden) return;
+  const options = scopePanel.querySelectorAll(".combo-option");
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeIndex = Math.min(activeIndex + 1, options.length - 1);
+    options.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+    options[activeIndex]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeIndex = Math.max(activeIndex - 1, 0);
+    options.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+    options[activeIndex]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    const el = options[activeIndex];
+    if (el) pickScope(Number(el.dataset.i));
+  } else if (e.key === "Escape") {
+    hidePanel();
+    scopeInput.blur();
+  }
+});
+
+scopePanel.addEventListener("mousedown", (e) => {
+  const el = e.target.closest(".combo-option");
+  if (!el) return;
+  e.preventDefault();
+  pickScope(Number(el.dataset.i));
 });
 
 // ───── Dashboard tiles ───────────────────────────────────────────────────────
 const TILES = [
-  { key: "vuln",   title: "High-struggling counties",   prompt: "Using supabase_sql on county_rankings, count counties in scope where pct_struggling >= 50 (ALICE + poverty ≥50% of households), and the top county by pct_struggling. Respond with EXACTLY three lines, no preamble, no code fence:\n## <N>\ncounties ≥50% struggling\nTop: <county>, <state> (<pct>%)" },
+  { key: "vuln",   title: "Counties in worst 20% nationally", prompt: "Using supabase_sql on county_rankings: (1) compute the 80th percentile of pct_struggling across ALL counties nationwide (no scope filter); (2) count counties IN SCOPE where pct_struggling >= that percentile; (3) identify the scope county with the highest pct_struggling. Respond with EXACTLY three lines, no preamble, no code fence:\n## <N>\ncounties in worst 20% nationally (struggling)\nTop: <county>, <state> (<pct>%)" },
   { key: "hazard", title: "Leading hazard (avg risk)",  prompt: "Using supabase_sql on county_rankings, compute AVG of each: hurricane_risk, wildfire_risk, flood_risk, coastal_flood_risk, tornado_risk, earthquake_risk, heat_wave_risk, winter_storm_risk across scope counties. Pick the hazard with the highest average (scores are 0-100). Find the county with the highest value of that specific hazard_risk column. Respond with EXACTLY three lines, no preamble:\n## <Hazard name, e.g. Hurricane>\navg risk <X.X> / 100\nLead: <county>, <state> (<score>)" },
   { key: "alice",  title: "ALICE + poverty households", prompt: "Using supabase_sql, for counties in scope compute the sum of (pct_struggling * population / 100) as total struggling households. Find the top county by that same calculation. Respond with EXACTLY three lines, no preamble:\n## <total, rounded, with commas>\nALICE + poverty households\nTop: <county>, <state> (<count, rounded>)" },
   { key: "fema",   title: "FEMA declarations (since 2020)", prompt: "Using supabase_sql on fema_declarations, count total declarations covering any county in scope since 2020, and identify the single most common incident_type. Respond with EXACTLY three lines, no preamble:\n## <N>\nFEMA declarations since 2020\nMost common: <incident_type>" },
