@@ -102,6 +102,14 @@
   }
   .section h3 .dot { width:6px; height:6px; background:var(--red); border-radius:50%; }
 
+  /* Accordion collapse */
+  .section.collapsible h3 { cursor:pointer; user-select:none; }
+  .section.collapsible h3 .chevron {
+    margin-left:auto; font-size:14px; transition:transform 0.2s; line-height:1;
+  }
+  .section.collapsible.collapsed h3 .chevron { transform:rotate(-90deg); }
+  .section.collapsible.collapsed .section-body { display:none; }
+
   #briefing {
     font-size:14px; line-height:1.55; color:var(--fg); min-height:52px;
     font-weight:500; letter-spacing:0.1px;
@@ -125,7 +133,7 @@
     background:rgba(247,168,27,0.12); padding:3px 7px; border-radius:4px; min-width:42px; text-align:center;
   }
 
-  #chatSection { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  #chatSection { flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
   #messages { flex:1; overflow-y:auto; padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
   .msg { padding:9px 12px; border-radius:8px; line-height:1.5; font-size:13px; white-space:pre-wrap; word-wrap:break-word; }
   .msg.user { background:var(--panel2); border:1px solid var(--border); align-self:flex-end; max-width:90%; }
@@ -249,6 +257,35 @@
     align-items:center; justify-content:center; z-index:1000;
   }
 
+  /* ───── Print styles ──────────────────────────────────────────────────────── */
+  @media print {
+    html, body { overflow:visible; height:auto; background:#fff; color:#000; font-size:12px; }
+    #app { display:block; height:auto; overflow:visible; }
+    header#top { position:relative; background:#fff; border-bottom:2px solid #ccc; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+    .brand .pulse { display:none; }
+    .brand .rc { color:#c00; }
+    #printBtn, #logout, #themeBtn, #basemapBtn, .basemap-panel, .map-controls { display:none !important; }
+    aside#rail { border:0; overflow:visible; background:#fff; }
+    .section { page-break-inside:avoid; border-bottom:1px solid #ddd; }
+    .section.collapsed .section-body { display:block !important; }
+    .section h3 .chevron { display:none; }
+    #briefing { color:#000; }
+    .top5-name { color:#000; }
+    .top5-val { background:rgba(247,168,27,0.2); color:#a06800; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+    main#mapwrap { display:none; }
+    footer#bottom { background:#fff; border-top:2px solid #ccc; }
+    .kpi-label { color:#555; }
+    .kpi-value { color:#000; }
+    .kpi-sub { color:#555; }
+    #chatSection { overflow:visible; }
+    #messages { overflow:visible; max-height:none; }
+    #askForm { display:none; }
+    .msg { border:1px solid #ddd; background:#f9f9f9; color:#000; }
+    .msg.user { background:#eee; }
+    .msg strong { color:#000; }
+    .combo-panel { display:none; }
+  }
+
   /* Responsive */
   @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; grid-template-rows: 52px 50vh 40vh 56px;
@@ -276,6 +313,7 @@
       </div>
     </div>
     <div class="sep"></div>
+    <button class="icon-btn" id="printBtn" title="Print / Save PDF">🖨 Print</button>
     <button class="icon-btn" id="logout">Sign out</button>
   </header>
 
@@ -285,14 +323,18 @@
       Select a division, region, or chapter above. The map will load its counties and an AI briefing will synthesize.
     </div>
 
-    <div class="section" id="briefingSection" hidden>
-      <h3><span class="dot"></span>Executive briefing</h3>
-      <div id="briefing" class="loading">Synthesizing…<div class="shimmer"></div></div>
+    <div class="section collapsible" id="briefingSection" hidden>
+      <h3><span class="dot"></span>Executive briefing <span class="chevron">▾</span></h3>
+      <div class="section-body">
+        <div id="briefing" class="loading">Synthesizing…<div class="shimmer"></div></div>
+      </div>
     </div>
 
-    <div class="section" id="top5Section" hidden>
-      <h3><span class="dot"></span>Top 5 counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span></h3>
-      <div id="top5"></div>
+    <div class="section collapsible" id="top5Section" hidden>
+      <h3><span class="dot"></span>Top 5 counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span> <span class="chevron">▾</span></h3>
+      <div class="section-body">
+        <div id="top5"></div>
+      </div>
     </div>
 
     <div class="section" id="chatSection" hidden>
@@ -1010,10 +1052,31 @@ function initChat() {
       chatHistory.push({ role:"bot", text: "Network error: " + x.message });
     }
     saveChat(activeScope);
+    collapseAccordions();
     renderChat();
     btn.disabled = false;
   });
 }
+
+// ───── Accordions ───────────────────────────────────────────────────────────
+document.querySelectorAll(".section.collapsible h3").forEach(h3 => {
+  h3.addEventListener("click", () => {
+    h3.closest(".section").classList.toggle("collapsed");
+  });
+});
+
+function collapseAccordions() {
+  document.querySelectorAll(".section.collapsible").forEach(s => s.classList.add("collapsed"));
+}
+function expandAccordions() {
+  document.querySelectorAll(".section.collapsible").forEach(s => s.classList.remove("collapsed"));
+}
+
+// ───── Print ────────────────────────────────────────────────────────────────
+document.getElementById("printBtn").addEventListener("click", () => {
+  expandAccordions();
+  setTimeout(() => window.print(), 100);
+});
 
 // ───── Logout ────────────────────────────────────────────────────────────────
 function initLogout() {
