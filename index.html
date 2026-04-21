@@ -58,9 +58,29 @@
     height: 100vh;
   }
   #app.has-scope {
-    grid-template-columns: 55fr 45fr;
+    grid-template-columns: 400px 1fr;
     grid-template-areas: "header header" "rail map";
+    transition: grid-template-columns 0.25s ease;
   }
+  #app.has-scope.rail-collapsed {
+    grid-template-columns: 0px 1fr;
+  }
+  #app.has-scope.rail-collapsed aside#rail { overflow: hidden; padding: 0; border: 0; }
+
+  .rail-toggle {
+    position: absolute; top: 50%; left: 0; z-index: 25;
+    transform: translateY(-50%);
+    width: 28px; height: 56px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 0; border-radius: 0 8px 8px 0;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--fg2); font-size: 16px;
+    transition: all .15s;
+  }
+  .rail-toggle:hover { color: var(--red); background: var(--red-dim); }
+  .rail-collapsed .rail-toggle { left: 0; }
+  #app:not(.has-scope) .rail-toggle { display: none; }
 
   /* ───── Header ──────────────────────────────────────────────────────────── */
   header#top {
@@ -356,6 +376,7 @@
   </aside>
 
   <main id="mapwrap">
+    <button class="rail-toggle" id="railToggle" title="Toggle sidebar" aria-label="Toggle sidebar">&#x25C0;</button>
     <div id="map"></div>
     <div class="legend" id="legend" hidden>
       <h4 id="legendTitle">Overall risk</h4>
@@ -785,6 +806,16 @@ function expandAccordions() { document.querySelectorAll(".tab-panel").forEach(p 
 
 // ───── Print ────────────────────────────────────────────────────────────────
 document.getElementById("printBtn").addEventListener("click", () => { expandAccordions(); setTimeout(() => window.print(), 100); });
+
+// ───── Sidebar toggle ────────────────────────────────────────────────────────
+document.getElementById("railToggle").addEventListener("click", () => {
+  const app = document.getElementById("app");
+  const btn = document.getElementById("railToggle");
+  app.classList.toggle("rail-collapsed");
+  btn.innerHTML = app.classList.contains("rail-collapsed") ? "&#x25B6;" : "&#x25C0;";
+  // Let map resize after transition
+  setTimeout(() => { if (mapView) mapView.resize(); }, 300);
+});
 
 // ───── Logout ────────────────────────────────────────────────────────────────
 function initLogout() { document.getElementById("logout").addEventListener("click", async () => { await fetch("/api/logout", { method:"POST" }); location.href = "/login"; }); }
