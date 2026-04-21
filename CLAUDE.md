@@ -61,6 +61,9 @@ git -c core.hooksPath=/dev/null push origin main
 ```
 `--no-verify` does not bypass git-secrets on this machine; use `-c core.hooksPath=/dev/null`.
 
+## UI Design System
+Follow the design tokens in DESIGN.md for all UI work.
+
 ## Related
 - `~/dev/vulnerability-explorer-deploy/api/smart-query.js` — the canonical brain
 - `~/dev/dragons-brain-vault/projects/smart-query-platform.md` — strategic plan (Tier 2 is this repo)
