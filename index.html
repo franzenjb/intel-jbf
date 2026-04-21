@@ -6,7 +6,7 @@
 <title>Red Cross Intel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css" />
 <style>
   :root {
@@ -19,6 +19,7 @@
     --dim: #94a3b8;
     --red: #ED1B2E;
     --red-dim: rgba(237,27,46,0.06);
+    --red-soft: rgba(237,27,46,0.10);
     --red-outline: #c41120;
     --border: #e2e8f0;
     --accent: #1d4ed8;
@@ -28,602 +29,229 @@
     --overlay-border: rgba(0,0,0,0.08);
     --input-bg: #ffffff;
     --county-outline: rgba(30,30,30,0.3);
-    --card-shadow: 0 1px 3px rgba(50,50,93,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --card-shadow-md: 0 4px 12px rgba(50,50,93,0.1), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow: 0 1px 3px rgba(50,50,93,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(50,50,93,0.10), 0 2px 4px rgba(0,0,0,0.04);
   }
   [data-theme="dark"] {
-    --bg: #0f172a;
-    --panel: #1e293b;
-    --panel2: #334155;
-    --fg: #f1f5f9;
-    --fg2: #cbd5e1;
-    --muted: #94a3b8;
-    --dim: #64748b;
+    --bg: #0f172a; --panel: #1e293b; --panel2: #334155;
+    --fg: #f1f5f9; --fg2: #cbd5e1; --muted: #94a3b8; --dim: #64748b;
+    --red-dim: rgba(237,27,46,0.15); --red-soft: rgba(237,27,46,0.18);
     --border: rgba(255,255,255,0.1);
-    --accent: #60a5fa;
-    --amber: #f59e0b;
-    --ok: #34d399;
-    --overlay: rgba(30,41,59,0.96);
-    --overlay-border: rgba(255,255,255,0.1);
-    --input-bg: rgba(255,255,255,0.06);
-    --county-outline: rgba(255,255,255,0.22);
-    --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    --card-shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+    --accent: #60a5fa; --amber: #f59e0b; --ok: #34d399;
+    --overlay: rgba(30,41,59,0.96); --overlay-border: rgba(255,255,255,0.1);
+    --input-bg: rgba(255,255,255,0.06); --county-outline: rgba(255,255,255,0.22);
+    --shadow: 0 1px 3px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
   }
-
   * { box-sizing: border-box; margin: 0; }
   html, body {
-    margin: 0; height: 100%;
-    background: var(--bg); color: var(--fg);
+    margin: 0; height: 100%; background: var(--bg); color: var(--fg);
     font: 15px/1.6 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow: hidden;
+    -webkit-font-smoothing: antialiased; overflow: hidden;
   }
 
-  /* ───── Grid layout ─────────────────────────────────────────────────────── */
+  /* ───── Grid: report panel is primary, map is support ───────────────────── */
   #app {
     display: grid;
-    grid-template-columns: 500px 1fr;
-    grid-template-rows: 64px 1fr auto;
-    grid-template-areas:
-      "header header"
-      "rail map"
-      "footer footer";
+    grid-template-columns: 55fr 45fr;
+    grid-template-rows: 64px 1fr;
+    grid-template-areas: "header header" "rail map";
     height: 100vh;
   }
 
   /* ───── Header ──────────────────────────────────────────────────────────── */
   header#top {
-    grid-area: header;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    box-shadow: var(--card-shadow);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 0 28px;
-    position: relative;
-    z-index: 20;
+    grid-area: header; background: var(--panel);
+    border-bottom: 1px solid var(--border); box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 20px;
+    padding: 0 28px; position: relative; z-index: 20;
   }
-  .brand {
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--fg);
-  }
-  .brand .rc { color: var(--red); font-weight: 700; }
-  .brand .pulse {
-    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-    background: var(--red); vertical-align: middle;
-    animation: pulse 2.5s ease-in-out infinite; flex-shrink: 0;
-  }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(237,27,46,0.5); }
-    50%      { box-shadow: 0 0 0 8px rgba(237,27,46,0); }
-  }
+  .brand { font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 10px; color: var(--fg); letter-spacing: -0.3px; }
+  .brand .rc { color: var(--red); }
+  .brand .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: pulse 2.5s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(237,27,46,0.5)} 50%{box-shadow:0 0 0 8px rgba(237,27,46,0)} }
   .sep { flex: 1; }
-
   .scope-row { display: flex; gap: 10px; align-items: center; }
-  .type-tabs {
-    display: inline-flex;
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .type-tabs button {
-    background: transparent; color: var(--muted); border: 0;
-    padding: 8px 16px;
-    font: 600 13px/1 inherit;
-    letter-spacing: 0.3px; text-transform: uppercase;
-    cursor: pointer;
-    transition: color .15s, background .15s;
-  }
-  .type-tabs button.active {
-    background: var(--red); color: #fff;
-  }
-  .type-tabs button:hover:not(.active) {
-    color: var(--fg); background: rgba(0,0,0,0.03);
-  }
-
+  .type-tabs { display: inline-flex; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .type-tabs button { background: transparent; color: var(--muted); border: 0; padding: 8px 16px; font: 600 13px/1 inherit; letter-spacing: 0.3px; text-transform: uppercase; cursor: pointer; transition: all .15s; }
+  .type-tabs button.active { background: var(--red); color: #fff; }
+  .type-tabs button:hover:not(.active) { color: var(--fg); background: rgba(0,0,0,0.03); }
   .combo { position: relative; }
-  .combo input {
-    background: var(--input-bg); color: var(--fg);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 9px 16px; font: inherit; font-size: 15px;
-    width: 320px;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  .combo input:focus {
-    outline: none; border-color: var(--red);
-    box-shadow: 0 0 0 3px var(--red-dim);
-  }
-  .combo-panel {
-    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-    max-height: 380px; overflow-y: auto; z-index: 100;
-    box-shadow: var(--card-shadow-md);
-  }
-  .combo-option {
-    padding: 12px 18px; cursor: pointer; font-size: 15px; font-weight: 500;
-    border-bottom: 1px solid var(--border); transition: background .1s;
-    color: var(--fg);
-  }
+  .combo input { background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 16px; font: inherit; font-size: 15px; width: 320px; transition: border-color .15s, box-shadow .15s; }
+  .combo input:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+  .combo-panel { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; max-height: 380px; overflow-y: auto; z-index: 100; box-shadow: var(--shadow-md); }
+  .combo-option { padding: 12px 18px; cursor: pointer; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--border); transition: background .1s; color: var(--fg); }
   .combo-option:last-child { border-bottom: 0; }
   .combo-option:hover, .combo-option.active { background: var(--red-dim); }
   .combo-option .muted { color: var(--muted); font-size: 13px; margin-left: 8px; font-weight: 400; }
   .combo-empty { padding: 16px 18px; color: var(--muted); font-size: 14px; }
+  .icon-btn { background: var(--panel); border: 1px solid var(--border); color: var(--fg2); border-radius: 8px; padding: 8px 16px; font: 600 13px/1 inherit; cursor: pointer; transition: all .15s; }
+  .icon-btn:hover { color: var(--fg); border-color: var(--red); background: var(--red-dim); }
 
-  .icon-btn {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    color: var(--fg2);
-    border-radius: 8px;
-    padding: 8px 16px;
-    font: 600 13px/1 inherit;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .icon-btn:hover {
-    color: var(--fg);
-    border-color: var(--red);
-    background: var(--red-dim);
-  }
-
-  /* ───── Left rail ────────────────────────────────────────────────────────── */
+  /* ───── Report panel (left side) ────────────────────────────────────────── */
   aside#rail {
-    grid-area: rail;
-    background: var(--bg);
+    grid-area: rail; background: var(--bg);
     border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: 16px;
-    gap: 12px;
+    display: flex; flex-direction: column; overflow: hidden;
   }
-  .rail-empty {
-    padding: 48px 24px; color: var(--muted);
-    font-size: 16px; line-height: 1.6; text-align: center;
-  }
-  .rail-empty strong {
-    color: var(--fg); display: block;
-    font-size: 20px; font-weight: 700;
-    margin-bottom: 8px; letter-spacing: -0.3px;
-  }
+  .rail-empty { padding: 60px 40px; color: var(--muted); font-size: 16px; line-height: 1.7; text-align: center; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .rail-empty strong { color: var(--fg); display: block; font-size: 22px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.3px; }
 
-  .section {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px 24px;
-    box-shadow: var(--card-shadow);
+  /* ───── Tab bar ─────────────────────────────────────────────────────────── */
+  .tab-bar {
+    display: flex; gap: 6px; padding: 16px 20px;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow); flex-shrink: 0;
   }
-  .section h3 {
-    margin: 0 0 14px;
-    font-size: 13px;
-    color: var(--fg2);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .tab {
+    flex: 1; padding: 14px 16px; font: 700 14px/1 inherit;
+    border: 2px solid var(--border); background: var(--panel);
+    color: var(--fg2); cursor: pointer; border-radius: 10px;
+    text-align: center; transition: all .15s; letter-spacing: -0.1px;
   }
-  .section h3 .dot {
-    width: 8px; height: 8px;
-    background: var(--red);
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+  .tab:hover:not(.active) { border-color: var(--red); color: var(--fg); background: var(--red-dim); }
+  .tab.active { background: var(--red); color: #fff; border-color: var(--red); box-shadow: 0 2px 8px rgba(237,27,46,0.25); }
 
-  /* Accordion collapse */
-  .section.collapsible h3 {
-    cursor: pointer; user-select: none;
-    transition: color .15s;
-  }
-  .section.collapsible h3:hover { color: var(--red); }
-  .section.collapsible h3 .chevron {
-    margin-left: auto; font-size: 14px;
-    transition: transform 0.2s; line-height: 1;
-  }
-  .section.collapsible.collapsed h3 .chevron { transform: rotate(-90deg); }
-  .section.collapsible.collapsed .section-body { display: none; }
+  /* ───── Tab panels ──────────────────────────────────────────────────────── */
+  .tab-panel { display: flex; flex-direction: column; gap: 16px; padding: 20px; flex: 1; overflow-y: auto; }
+  .tab-panel[hidden] { display: none; }
 
-  #briefing {
-    font-size: 15px; line-height: 1.7;
-    color: var(--fg2);
-    min-height: 52px;
-    font-weight: 400;
+  /* ───── KPI card grid ───────────────────────────────────────────────────── */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kpi-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px; box-shadow: var(--shadow);
   }
+  .kpi-card.full-width { grid-column: 1 / -1; }
+  .kpi-label { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; line-height: 1; }
+  .kpi-value { font: 800 28px/1 inherit; color: var(--fg); margin-top: 8px; letter-spacing: -0.5px; }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 500; line-height: 1; }
+
+  /* ───── Content cards ───────────────────────────────────────────────────── */
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; box-shadow: var(--shadow);
+  }
+  .card h3 {
+    margin: 0 0 16px; font-size: 14px; color: var(--fg2);
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card h3 .dot { width: 8px; height: 8px; background: var(--red); border-radius: 50%; flex-shrink: 0; }
+
+  /* ───── Briefing ────────────────────────────────────────────────────────── */
+  #briefing { font-size: 15px; line-height: 1.75; color: var(--fg2); font-weight: 400; }
   #briefing.loading { color: var(--muted); font-style: italic; }
-  #briefing .shimmer {
-    display: inline-block; width: 80%; height: 14px;
-    background: linear-gradient(90deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 100%);
-    background-size: 200% 100%;
-    animation: sh 1.6s infinite;
-    border-radius: 4px; margin-top: 6px;
-  }
+  #briefing .shimmer { display: inline-block; width: 80%; height: 14px; background: linear-gradient(90deg,rgba(0,0,0,0.04) 0%,rgba(0,0,0,0.08) 50%,rgba(0,0,0,0.04) 100%); background-size: 200% 100%; animation: sh 1.6s infinite; border-radius: 4px; margin-top: 6px; }
   @keyframes sh { to { background-position: -200% 0; } }
 
-  #top5 { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
-  .top5-row {
-    display: grid;
-    grid-template-columns: 28px 1fr auto;
-    gap: 10px; align-items: center;
-    padding: 12px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.12s;
+  /* ───── Metric selector (inside Counties tab) ───────────────────────────── */
+  .metric-selector { display: flex; flex-wrap: wrap; gap: 6px; }
+  .map-chip {
+    background: var(--panel); border: 1px solid var(--border); color: var(--fg2);
+    padding: 9px 16px; border-radius: 8px; font: 600 12px/1 inherit;
+    letter-spacing: 0.2px; text-transform: uppercase; cursor: pointer;
+    transition: all .15s; box-shadow: var(--shadow);
   }
+  .map-chip:hover:not(.active) { border-color: var(--red); color: var(--fg); }
+  .map-chip.active { background: var(--red); border-color: var(--red); color: #fff; box-shadow: 0 2px 8px rgba(237,27,46,0.2); }
+
+  /* ───── Top 5 ───────────────────────────────────────────────────────────── */
+  #top5 { display: flex; flex-direction: column; gap: 4px; }
+  .top5-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 10px; cursor: pointer; transition: background 0.12s; }
   .top5-row:hover { background: var(--red-dim); }
   .top5-row.active { background: var(--red-dim); }
-  .top5-rank {
-    color: var(--muted);
-    font-size: 14px; font-weight: 700;
-    text-align: center;
-  }
-  .top5-name {
-    font-size: 15px; color: var(--fg);
-    overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-weight: 600;
-  }
+  .top5-rank { color: var(--muted); font-size: 16px; font-weight: 800; text-align: center; }
+  .top5-name { font-size: 16px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .top5-name .state { color: var(--muted); font-weight: 400; }
-  .top5-val {
-    font: 700 13px/1 ui-monospace, "SF Mono", Menlo, monospace;
-    color: var(--amber);
-    background: rgba(146,64,14,0.08);
-    padding: 6px 12px;
-    border-radius: 6px;
-    min-width: 48px;
-    text-align: center;
-    letter-spacing: -0.3px;
-  }
+  .top5-val { font: 700 14px/1 ui-monospace,"SF Mono",Menlo,monospace; color: var(--amber); background: rgba(146,64,14,0.08); padding: 7px 14px; border-radius: 8px; min-width: 52px; text-align: center; }
 
-  #chatSection {
-    flex: 1; display: flex; flex-direction: column;
-    overflow: hidden; min-height: 0;
-  }
-  #messages {
-    flex: 1; overflow-y: auto;
-    padding: 16px 0;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .msg {
-    padding: 14px 18px;
-    border-radius: 12px;
-    line-height: 1.6;
-    font-size: 15px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
-  .msg.user {
-    background: var(--red-dim);
-    border: 1px solid rgba(237,27,46,0.12);
-    align-self: flex-end;
-    max-width: 88%;
-    color: var(--fg);
-  }
-  .msg.bot {
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    color: var(--fg2);
-  }
+  /* ───── Chat ────────────────────────────────────────────────────────────── */
+  .chat-card { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .chat-card h3 { flex-shrink: 0; }
+  .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; flex-shrink: 0; }
+  .suggestion { background: var(--panel2); border: 1px solid var(--border); color: var(--fg2); border-radius: 20px; padding: 8px 16px; font: 500 13px/1.3 inherit; cursor: pointer; transition: all .15s; }
+  .suggestion:hover { border-color: var(--red); background: var(--red-dim); color: var(--fg); }
+  #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .msg { padding: 14px 18px; border-radius: 12px; line-height: 1.6; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.user { background: var(--red-dim); border: 1px solid rgba(237,27,46,0.12); align-self: flex-end; max-width: 88%; color: var(--fg); }
+  .msg.bot { background: var(--panel2); border: 1px solid var(--border); color: var(--fg2); }
   .msg.bot.pending { color: var(--muted); font-style: italic; }
-  .msg code {
-    background: rgba(0,0,0,0.05); padding: 2px 6px;
-    border-radius: 4px; font-size: 14px;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  }
-  .msg pre {
-    background: rgba(0,0,0,0.03); padding: 12px;
-    border-radius: 8px; overflow: auto;
-    font-size: 14px; margin: 8px 0;
-    border: 1px solid var(--border);
-  }
+  .msg code { background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: ui-monospace,"SF Mono",Menlo,monospace; }
+  .msg pre { background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; overflow: auto; font-size: 14px; margin: 8px 0; border: 1px solid var(--border); }
   .msg strong { color: var(--fg); }
-
-  .suggestions {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    padding: 8px 0 12px;
-  }
-  .suggestion {
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    color: var(--fg2);
-    border-radius: 20px;
-    padding: 6px 14px;
-    font: 500 13px/1.3 inherit;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .suggestion:hover {
-    border-color: var(--red);
-    background: var(--red-dim);
-    color: var(--fg);
-  }
-
-  #askForm {
-    display: flex; gap: 8px;
-    padding: 14px 0 0;
-    border-top: 1px solid var(--border);
-  }
-  #askForm textarea {
-    flex: 1;
-    background: var(--input-bg);
-    color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font: 15px/1.4 inherit;
-    resize: none;
-    min-height: 44px;
-    max-height: 100px;
-  }
-  #askForm textarea:focus {
-    outline: none;
-    border-color: var(--red);
-    box-shadow: 0 0 0 3px var(--red-dim);
-  }
-  #askForm button.send {
-    background: var(--red); color: #fff;
-    border: 0; border-radius: 10px;
-    padding: 0 20px;
-    font: 700 16px/1 inherit;
-    cursor: pointer;
-    transition: background .15s;
-  }
+  #askForm { display: flex; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border); flex-shrink: 0; margin-top: auto; }
+  #askForm textarea { flex: 1; background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font: 15px/1.4 inherit; resize: none; min-height: 44px; max-height: 100px; }
+  #askForm textarea:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+  #askForm button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 0 22px; font: 700 18px/1 inherit; cursor: pointer; transition: background .15s; }
   #askForm button.send:hover { background: #d41628; }
   #askForm button.send:disabled { opacity: 0.4; cursor: progress; }
 
   /* ───── Map ──────────────────────────────────────────────────────────────── */
   main#mapwrap { grid-area: map; position: relative; background: var(--bg); }
   #map { position: absolute; inset: 0; }
-  .map-overlay {
-    position: absolute; top: 16px; left: 16px;
-    display: flex; flex-direction: column; gap: 8px;
-    z-index: 10; pointer-events: none;
-  }
-  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; pointer-events: auto; }
-  .map-chip {
-    background: var(--overlay);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--overlay-border);
-    color: var(--fg2);
-    padding: 9px 18px;
-    border-radius: 9999px;
-    font: 600 12px/1 inherit;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all .15s;
-    box-shadow: var(--card-shadow);
-  }
-  .map-chip:hover {
-    border-color: var(--red);
-    color: var(--fg);
-  }
-  .map-chip.active {
-    background: var(--red);
-    border-color: var(--red);
-    color: #fff;
-    box-shadow: 0 2px 12px rgba(237,27,46,0.25);
-  }
-
-  .legend {
-    position: absolute; bottom: 20px; left: 20px;
-    background: var(--overlay);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--overlay-border);
-    border-radius: 12px;
-    padding: 16px 20px;
-    z-index: 10;
-    font-size: 13px;
-    color: var(--muted);
-    min-width: 200px;
-    box-shadow: var(--card-shadow-md);
-  }
-  .legend h4 {
-    margin: 0 0 8px;
-    font-size: 12px;
-    color: var(--fg);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    font-weight: 700;
-  }
+  .legend { position: absolute; bottom: 20px; left: 20px; background: var(--overlay); backdrop-filter: blur(12px); border: 1px solid var(--overlay-border); border-radius: 12px; padding: 16px 20px; z-index: 10; font-size: 13px; color: var(--muted); min-width: 200px; box-shadow: var(--shadow-md); }
+  .legend h4 { margin: 0 0 8px; font-size: 12px; color: var(--fg); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
   .legend .bar { display: flex; gap: 2px; margin: 6px 0; }
   .legend .bar div { flex: 1; height: 14px; border-radius: 3px; }
   .legend .labels { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; }
-
-  /* ───── Map controls (bottom-right stack) ───────────────────────────────── */
-  .map-controls {
-    position: absolute; bottom: 20px; right: 20px; z-index: 10;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .ctrl-btn {
-    width: 44px; height: 44px; border-radius: 10px;
-    background: var(--overlay);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--overlay-border);
-    color: var(--fg2);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; padding: 0;
-    transition: all .15s;
-    box-shadow: var(--card-shadow);
-  }
-  .ctrl-btn:hover {
-    border-color: var(--red);
-    color: var(--red);
-    transform: scale(1.05);
-  }
+  .map-controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+  .ctrl-btn { width: 44px; height: 44px; border-radius: 10px; background: var(--overlay); backdrop-filter: blur(12px); border: 1px solid var(--overlay-border); color: var(--fg2); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: all .15s; box-shadow: var(--shadow); }
+  .ctrl-btn:hover { border-color: var(--red); color: var(--red); transform: scale(1.05); }
   .ctrl-btn svg { width: 20px; height: 20px; }
   .ctrl-btn.active { background: var(--red); border-color: var(--red); color: #fff; }
-
-  .basemap-panel {
-    position: absolute; bottom: 20px; right: 72px; z-index: 11;
-    background: var(--overlay);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--overlay-border);
-    border-radius: 12px;
-    box-shadow: var(--card-shadow-md);
-    padding: 16px; min-width: 200px;
-  }
-  .basemap-panel h4 {
-    margin: 0 0 10px;
-    font-size: 12px;
-    color: var(--fg2);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    font-weight: 700;
-  }
+  .basemap-panel { position: absolute; bottom: 20px; right: 72px; z-index: 11; background: var(--overlay); backdrop-filter: blur(12px); border: 1px solid var(--overlay-border); border-radius: 12px; box-shadow: var(--shadow-md); padding: 16px; min-width: 200px; }
+  .basemap-panel h4 { margin: 0 0 10px; font-size: 12px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; }
   .bm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .bm-opt {
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    border-radius: 8px; padding: 0; cursor: pointer; overflow: hidden;
-    display: flex; flex-direction: column; text-align: center;
-    transition: border-color .15s;
-  }
+  .bm-opt { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 0; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; text-align: center; transition: border-color .15s; }
   .bm-opt:hover { border-color: var(--red); }
   .bm-opt.active { border-color: var(--red); box-shadow: 0 0 0 1px var(--red) inset; }
   .bm-thumb { height: 40px; width: 100%; display: block; }
-  .bm-label {
-    font: 600 10px/1.2 inherit;
-    color: var(--fg2);
-    padding: 6px 4px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    background: var(--panel2);
-  }
+  .bm-label { font: 600 10px/1.2 inherit; color: var(--fg2); padding: 6px 4px; letter-spacing: 0.3px; text-transform: uppercase; background: var(--panel2); }
   .bm-opt.active .bm-label { color: var(--red); }
 
-  /* ───── Footer KPI strip ─────────────────────────────────────────────────── */
-  footer#bottom {
-    grid-area: footer;
-    background: var(--panel);
-    border-top: 1px solid var(--border);
-    box-shadow: 0 -1px 3px rgba(50,50,93,0.06);
-    display: flex;
-    align-items: stretch;
-    padding: 0 8px;
-  }
-  .kpi {
-    flex: 1;
-    padding: 16px 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border-right: 1px solid var(--border);
-    min-width: 0;
-  }
-  .kpi:last-child { border-right: 0; }
-  .kpi-label {
-    font-size: 11px;
-    color: var(--fg2);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .kpi-value {
-    font: 700 26px/1 inherit;
-    color: var(--fg);
-    margin-top: 6px;
-    letter-spacing: -0.5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .kpi-value.big { font-size: 26px; letter-spacing: -0.5px; }
-  .kpi-sub {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 4px;
-    font-weight: 500;
-    line-height: 1;
-  }
-
-  /* ───── Loading / pending states ─────────────────────────────────────────── */
-  .dimmer {
-    position: absolute; inset: 0;
-    background: rgba(240,242,245,0.6);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 5; pointer-events: none;
-    opacity: 0; transition: opacity 0.2s;
-  }
+  /* ───── Loading ──────────────────────────────────────────────────────────── */
+  .dimmer { position: absolute; inset: 0; background: rgba(240,242,245,0.6); display: flex; align-items: center; justify-content: center; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
   [data-theme="dark"] .dimmer { background: rgba(15,23,42,0.6); }
   .dimmer.on { opacity: 1; }
-  .spinner {
-    width: 44px; height: 44px;
-    border: 3px solid var(--border);
-    border-top-color: var(--red);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
+  .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  #gate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 
-  /* ───── Login-redirect bridge ────────────────────────────────────────────── */
-  #gate {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000;
-  }
-
-  /* ───── Print styles ──────────────────────────────────────────────────────── */
+  /* ───── Print ────────────────────────────────────────────────────────────── */
   @media print {
     html, body { overflow: visible; height: auto; background: #fff; color: #000; font-size: 14px; }
     #app { display: block; height: auto; overflow: visible; }
-    header#top { position: relative; background: #fff; border-bottom: 2px solid #ccc; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    header#top { position: relative; background: #fff; border-bottom: 2px solid #ccc; }
     .brand .pulse { display: none; }
     .brand .rc { color: #c00; }
     #printBtn, #logout, #themeBtn, #basemapBtn, .basemap-panel, .map-controls { display: none !important; }
-    aside#rail { border: 0; overflow: visible; background: #fff; padding: 0; gap: 12px; }
-    .section { page-break-inside: avoid; border: 1px solid #ddd; padding: 16px 20px; box-shadow: none; }
-    .section.collapsed .section-body { display: block !important; }
-    .section h3 .chevron { display: none; }
-    .section h3 { font-size: 12px; color: #333; }
-    #briefing { color: #000; font-size: 14px; }
-    .top5-name { color: #000; font-size: 14px; }
-    .top5-val { background: rgba(146,64,14,0.1); color: #92400e; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    aside#rail { border: 0; overflow: visible; background: #fff; }
+    .tab-bar { display: none; }
+    .tab-panel { display: block !important; overflow: visible; }
+    .tab-panel[hidden] { display: block !important; }
+    .card { page-break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    .kpi-card { box-shadow: none; }
     main#mapwrap { display: none; }
-    footer#bottom { background: #fff; border-top: 2px solid #ccc; box-shadow: none; }
-    .kpi-label { color: #444; font-size: 11px; }
-    .kpi-value { color: #000; font-size: 22px; }
-    .kpi-sub { color: #555; }
-    #chatSection { overflow: visible; }
-    #messages { overflow: visible; max-height: none; }
     #askForm, .suggestions { display: none; }
-    .msg { border: 1px solid #ddd; background: #f9f9f9; color: #000; font-size: 14px; }
-    .msg.user { background: #eee; }
-    .msg strong { color: #000; }
+    .msg { border: 1px solid #ddd; background: #f9f9f9; color: #000; }
     .combo-panel { display: none; }
   }
 
-  /* Responsive */
+  /* ───── Responsive ──────────────────────────────────────────────────────── */
   @media (max-width: 960px) {
-    #app {
-      grid-template-columns: 1fr;
-      grid-template-rows: 64px 50vh 1fr 100px;
-      grid-template-areas: "header" "map" "rail" "footer";
-    }
+    #app { grid-template-columns: 1fr; grid-template-rows: 64px 40vh 1fr; grid-template-areas: "header" "map" "rail"; }
     aside#rail { border-right: 0; border-top: 1px solid var(--border); overflow-y: auto; }
     .combo input { width: 200px; }
     .scope-row { gap: 6px; }
     .type-tabs button { padding: 6px 10px; font-size: 11px; }
-    .kpi { padding: 10px 12px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
     .kpi-value { font-size: 22px; }
-    .kpi-value.big { font-size: 24px; }
-    .kpi-label { font-size: 11px; }
   }
   @media (max-width: 600px) {
     header#top { padding: 0 12px; gap: 10px; }
     .combo input { width: 140px; font-size: 14px; }
-    .section { padding: 14px 16px; }
-    .kpi-value { font-size: 20px; }
-    .kpi-value.big { font-size: 22px; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .kpi-card.full-width { grid-column: 1; }
   }
 </style>
 </head>
@@ -651,43 +279,52 @@
 
   <aside id="rail">
     <div class="rail-empty" id="railEmpty">
-      <strong>Choose a scope to get started</strong>
-      Select a division, region, or chapter above to see risk data, an AI briefing, and county-level analysis.
+      <strong>Select an Area</strong>
+      Choose a division, region, or chapter above to see your risk briefing, county data, and AI analysis.
     </div>
 
-    <div class="section collapsible" id="briefingSection" hidden>
-      <h3><span class="dot"></span>Executive Briefing <span class="chevron">&#x25BE;</span></h3>
-      <div class="section-body">
+    <div class="tab-bar" id="tabBar" hidden>
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="counties">Counties</button>
+      <button class="tab" data-tab="ask">Ask</button>
+    </div>
+
+    <div class="tab-panel" data-panel="overview" hidden>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Households Struggling</div>
+          <div class="kpi-value" id="kpiStruggling">&mdash;</div>
+          <div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Counties Covered</div>
+          <div class="kpi-value" id="kpiCounties">&mdash;</div>
+          <div class="kpi-sub" id="kpiPopulation">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Average Risk Score</div>
+          <div class="kpi-value" id="kpiRisk">&mdash;</div>
+          <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top Hazard</div>
+          <div class="kpi-value" id="kpiHazard">&mdash;</div>
+          <div class="kpi-sub" id="kpiHazardVal">&nbsp;</div>
+        </div>
+        <div class="kpi-card full-width">
+          <div class="kpi-label">Est. Annual Loss</div>
+          <div class="kpi-value" id="kpiEAL">&mdash;</div>
+          <div class="kpi-sub">across scope</div>
+        </div>
+      </div>
+      <div class="card" id="briefingSection" hidden>
+        <h3><span class="dot"></span>Executive Briefing</h3>
         <div id="briefing" class="loading">Synthesizing&hellip;<div class="shimmer"></div></div>
       </div>
     </div>
 
-    <div class="section collapsible" id="top5Section" hidden>
-      <h3><span class="dot"></span>Top 5 Counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span> <span class="chevron">&#x25BE;</span></h3>
-      <div class="section-body">
-        <div id="top5"></div>
-      </div>
-    </div>
-
-    <div class="section" id="chatSection" hidden>
-      <h3><span class="dot"></span>Ask a Question</h3>
-      <div class="suggestions" id="suggestions">
-        <button class="suggestion">What are the biggest risks here?</button>
-        <button class="suggestion">How does this compare nationally?</button>
-        <button class="suggestion">What should we prepare for?</button>
-      </div>
-      <div id="messages"></div>
-      <form id="askForm">
-        <textarea id="q" placeholder="Ask about this area…" rows="1"></textarea>
-        <button class="send" type="submit" id="sendBtn">&rarr;</button>
-      </form>
-    </div>
-  </aside>
-
-  <main id="mapwrap">
-    <div id="map"></div>
-    <div class="map-overlay">
-      <div class="chip-row" id="metricChips">
+    <div class="tab-panel" data-panel="counties" hidden>
+      <div class="metric-selector" id="metricChips">
         <button class="map-chip active" data-metric="risk_score">Overall Risk</button>
         <button class="map-chip" data-metric="pct_struggling">Financial Hardship</button>
         <button class="map-chip" data-metric="hurricane_risk">Hurricane</button>
@@ -697,45 +334,50 @@
         <button class="map-chip" data-metric="heat_wave_risk">Heat Wave</button>
         <button class="map-chip" data-metric="expected_annual_loss">Annual Loss</button>
       </div>
+      <div class="card" id="top5Section" hidden>
+        <h3><span class="dot"></span>Top 5 Counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span></h3>
+        <div id="top5"></div>
+      </div>
     </div>
+
+    <div class="tab-panel" data-panel="ask" hidden>
+      <div class="card chat-card" id="chatSection" hidden>
+        <h3><span class="dot"></span>Ask a Question</h3>
+        <div class="suggestions" id="suggestions">
+          <button class="suggestion">What are the biggest risks here?</button>
+          <button class="suggestion">How does this compare nationally?</button>
+          <button class="suggestion">What should we prepare for?</button>
+        </div>
+        <div id="messages"></div>
+        <form id="askForm">
+          <textarea id="q" placeholder="Ask about this area…" rows="1"></textarea>
+          <button class="send" type="submit" id="sendBtn">&rarr;</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+
+  <main id="mapwrap">
+    <div id="map"></div>
     <div class="legend" id="legend" hidden>
       <h4 id="legendTitle">Overall risk</h4>
       <div class="bar" id="legendBar"></div>
       <div class="labels" id="legendLabels"><span>0</span><span>100</span></div>
     </div>
-
-    <!-- Bottom-right control stack -->
     <div class="map-controls">
       <button class="ctrl-btn" id="basemapBtn" title="Basemap" aria-label="Basemap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="12,2 2,7 12,12 22,7"></polygon>
-          <polyline points="2,17 12,22 22,17"></polyline>
-          <polyline points="2,12 12,17 22,12"></polyline>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 2,7 12,12 22,7"></polygon><polyline points="2,17 12,22 22,17"></polyline><polyline points="2,12 12,17 22,12"></polyline></svg>
       </button>
       <button class="ctrl-btn" id="themeBtn" title="Toggle light/dark" aria-label="Toggle light/dark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" id="themeIcon">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
       </button>
     </div>
-
-    <!-- Basemap panel (hidden by default) -->
     <div class="basemap-panel" id="basemapPanel" hidden>
       <h4>Basemap</h4>
       <div class="bm-grid" id="bmGrid"></div>
     </div>
-
     <div class="dimmer" id="dimmer"><div class="spinner"></div></div>
   </main>
-
-  <footer id="bottom">
-    <div class="kpi"><div class="kpi-label">Households Struggling</div><div class="kpi-value big" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div>
-    <div class="kpi"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div>
-    <div class="kpi"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div>
-    <div class="kpi"><div class="kpi-label">Top Hazard</div><div class="kpi-value" id="kpiHazard">&mdash;</div><div class="kpi-sub" id="kpiHazardVal">&nbsp;</div></div>
-    <div class="kpi"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub">across scope</div></div>
-  </footer>
 </div>
 
 <script>
@@ -761,7 +403,6 @@ if (localStorage.getItem("intel:ui_version") !== "2") {
   }
 })();
 
-// ───── Minimal markdown renderer for chat ────────────────────────────────────
 function mdToHtml(md) {
   if (!md) return "";
   const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
@@ -781,13 +422,7 @@ const HAZARD_PRETTY = {
   strong_wind_risk: "Strong wind",
 };
 const HAZARD_KEYS = Object.keys(HAZARD_PRETTY);
-
-// Single bright sequential palette — ColorBrewer YlOrRd 7-step.
-// One ramp for every metric → consistent read; the scale/legend shifts per metric.
-const RAMP = [
-  "#ffffb2", "#fed976", "#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026",
-];
-// Alias kept for backward refs, all point at the same ramp.
+const RAMP = ["#ffffb2","#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#b10026"];
 const RAMPS = { red: RAMP, amber: RAMP, teal: RAMP };
 const METRIC_META = {
   risk_score:          { label: "Overall risk",        min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
@@ -799,9 +434,6 @@ const METRIC_META = {
   heat_wave_risk:      { label: "Heat-wave risk",      min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
   expected_annual_loss:{ label: "Expected annual loss", min:0, max:5e8, ramp: "red",   fmt: (v)=>"$"+shortNum(v) },
 };
-
-// ArcGIS basemaps available in the switcher. First entry is default for dark theme,
-// second is default for light theme. thumbBg/thumbLines are swatch colors for the grid.
 const BASEMAPS = [
   { id: "dark-gray-vector", name: "Dark",     thumbBg: "#1a1a1e", thumbLines: "#444",     mode: "dark"  },
   { id: "gray-vector",      name: "Light",    thumbBg: "#f5f5f0", thumbLines: "#d8d8d0",  mode: "light" },
@@ -812,24 +444,23 @@ const BASEMAPS = [
 ];
 let currentBasemapId = "gray-vector";
 let currentTheme = "light";
-function shortNum(v) {
-  if (v == null) return "—";
-  if (v >= 1e9) return (v/1e9).toFixed(1)+"B";
-  if (v >= 1e6) return (v/1e6).toFixed(1)+"M";
-  if (v >= 1e3) return (v/1e3).toFixed(0)+"K";
-  return String(Math.round(v));
-}
+function shortNum(v) { if(v==null)return"—";if(v>=1e9)return(v/1e9).toFixed(1)+"B";if(v>=1e6)return(v/1e6).toFixed(1)+"M";if(v>=1e3)return(v/1e3).toFixed(0)+"K";return String(Math.round(v)); }
 function fmtNum(v) { return v == null ? "—" : Math.round(v).toLocaleString(); }
 
-let scopes = null;
-let scopeList = [];
-let activeScope = null;
-let activeMetric = "risk_score";
-let countyData = null;   // { rows, national }
-let activeComboIdx = -1;
-let chatHistory = [];
-let mapView, countyLayer, outlineLayer;
-let arcgisMods = null; // lazy-loaded ArcGIS modules
+let scopes = null, scopeList = [], activeScope = null, activeMetric = "risk_score";
+let countyData = null, activeComboIdx = -1, chatHistory = [];
+let mapView, countyLayer, outlineLayer, arcgisMods = null;
+
+// ───── Tabs ──────────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => { p.hidden = p.dataset.panel !== name; });
+}
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => showTab(t.dataset.tab));
+  });
+}
 
 // ───── Bootstrap ─────────────────────────────────────────────────────────────
 async function bootstrap() {
@@ -839,9 +470,9 @@ async function bootstrap() {
   initChat();
   initLogout();
   initSuggestions();
+  initTabs();
   await initMap();
   initMapControls();
-  // Pre-select a marquee division so the demo lands with data visible
   const se = scopes.divisions.find(d => d.name === "Southeast and Caribbean Division");
   if (se) {
     setType("division");
@@ -856,21 +487,12 @@ async function loadScopes() {
   if (!r.ok) throw new Error("Failed to load scopes");
   scopes = await r.json();
 }
-
 const typeTabs = document.querySelectorAll(".type-tabs button");
-function setType(t) {
-  typeTabs.forEach(b => b.classList.toggle("active", b.dataset.type === t));
-  onScopeTypeChange();
-}
+function setType(t) { typeTabs.forEach(b => b.classList.toggle("active", b.dataset.type === t)); onScopeTypeChange(); }
 typeTabs.forEach(b => b.addEventListener("click", () => setType(b.dataset.type)));
-
-function currentType() {
-  return document.querySelector(".type-tabs button.active").dataset.type;
-}
-
+function currentType() { return document.querySelector(".type-tabs button.active").dataset.type; }
 const scopeInput = document.getElementById("scopeNameInput");
 const scopePanel = document.getElementById("scopeNamePanel");
-
 function onScopeTypeChange() {
   const t = currentType();
   scopeList = scopes[t + "s"] || [];
@@ -878,33 +500,21 @@ function onScopeTypeChange() {
   scopeInput.placeholder = `Search ${scopeList.length} ${t}${scopeList.length === 1 ? "" : "s"}…`;
   hidePanel();
 }
-
 function renderPanel(q) {
   const qq = (q || "").trim().toLowerCase();
-  const matches = qq
-    ? scopeList.map((s, i) => ({ ...s, _i: i })).filter(s => s.name.toLowerCase().includes(qq))
-    : scopeList.map((s, i) => ({ ...s, _i: i }));
-  if (!matches.length) {
-    scopePanel.innerHTML = `<div class="combo-empty">No matches</div>`;
-    scopePanel.hidden = false; activeComboIdx = -1; return;
-  }
+  const matches = qq ? scopeList.map((s, i) => ({ ...s, _i: i })).filter(s => s.name.toLowerCase().includes(qq)) : scopeList.map((s, i) => ({ ...s, _i: i }));
+  if (!matches.length) { scopePanel.innerHTML = `<div class="combo-empty">No matches</div>`; scopePanel.hidden = false; activeComboIdx = -1; return; }
   const t = currentType();
-  const sub = (s) => t === "chapter" ? ` <span class="muted">· ${s.region || ""}</span>`
-                   : t === "region"  ? ` <span class="muted">· ${s.division || ""}</span>`
-                   : "";
-  scopePanel.innerHTML = matches.slice(0, 300).map((s, idx) =>
-    `<div class="combo-option${idx===0?" active":""}" data-i="${s._i}">${s.name}${sub(s)}</div>`
-  ).join("");
-  scopePanel.hidden = false;
-  activeComboIdx = 0;
+  const sub = (s) => t === "chapter" ? ` <span class="muted">· ${s.region || ""}</span>` : t === "region" ? ` <span class="muted">· ${s.division || ""}</span>` : "";
+  scopePanel.innerHTML = matches.slice(0, 300).map((s, idx) => `<div class="combo-option${idx===0?" active":""}" data-i="${s._i}">${s.name}${sub(s)}</div>`).join("");
+  scopePanel.hidden = false; activeComboIdx = 0;
 }
 function hidePanel() { scopePanel.hidden = true; activeComboIdx = -1; }
-
 function initScopeUI() {
   onScopeTypeChange();
   scopeInput.addEventListener("focus", () => renderPanel(scopeInput.value));
   scopeInput.addEventListener("input", () => renderPanel(scopeInput.value));
-  scopeInput.addEventListener("blur",  () => setTimeout(hidePanel, 150));
+  scopeInput.addEventListener("blur", () => setTimeout(hidePanel, 150));
   scopeInput.addEventListener("keydown", (e) => {
     if (scopePanel.hidden) return;
     const opts = scopePanel.querySelectorAll(".combo-option");
@@ -913,21 +523,10 @@ function initScopeUI() {
     else if (e.key === "Enter") { e.preventDefault(); const el = opts[activeComboIdx]; if (el) pickScope(Number(el.dataset.i)); }
     else if (e.key === "Escape") { hidePanel(); scopeInput.blur(); }
   });
-  scopePanel.addEventListener("mousedown", (e) => {
-    const el = e.target.closest(".combo-option");
-    if (!el) return;
-    e.preventDefault(); pickScope(Number(el.dataset.i));
-  });
+  scopePanel.addEventListener("mousedown", (e) => { const el = e.target.closest(".combo-option"); if (!el) return; e.preventDefault(); pickScope(Number(el.dataset.i)); });
 }
-function updateActiveOpt(opts) {
-  opts.forEach((el, i) => el.classList.toggle("active", i === activeComboIdx));
-  opts[activeComboIdx]?.scrollIntoView({ block:"nearest" });
-}
-function pickScope(i) {
-  const s = scopeList[i]; if (!s) return;
-  scopeInput.value = s.name; hidePanel();
-  activateScope({ type: currentType(), name: s.name, code: s.code, region: s.region, division: s.division });
-}
+function updateActiveOpt(opts) { opts.forEach((el, i) => el.classList.toggle("active", i === activeComboIdx)); opts[activeComboIdx]?.scrollIntoView({ block:"nearest" }); }
+function pickScope(i) { const s = scopeList[i]; if (!s) return; scopeInput.value = s.name; hidePanel(); activateScope({ type: currentType(), name: s.name, code: s.code, region: s.region, division: s.division }); }
 
 // ───── Metric chips ──────────────────────────────────────────────────────────
 function initMetricChips() {
@@ -935,10 +534,7 @@ function initMetricChips() {
     chip.addEventListener("click", () => {
       document.querySelectorAll(".map-chip").forEach(c => c.classList.toggle("active", c === chip));
       activeMetric = chip.dataset.metric;
-      renderChoropleth();
-      renderTop5();
-      renderLegend();
-      updateKPIs();
+      renderChoropleth(); renderTop5(); renderLegend(); updateKPIs();
     });
   });
 }
@@ -946,153 +542,68 @@ function initMetricChips() {
 // ───── Map init ──────────────────────────────────────────────────────────────
 async function initMap() {
   arcgisMods = await loadArcGIS();
-  const { Map, MapView, GraphicsLayer, FeatureLayer } = arcgisMods;
+  const { Map, MapView, GraphicsLayer } = arcgisMods;
   const map = new Map({ basemap: currentBasemapId });
   countyLayer = new GraphicsLayer({ id: "counties" });
   outlineLayer = new GraphicsLayer({ id: "outline" });
   map.addMany([countyLayer, outlineLayer]);
-  mapView = new MapView({
-    container: "map",
-    map,
-    center: [-96, 38],
-    zoom: 4,
-    constraints: { snapToZoom: false },
-    ui: { components: ["zoom", "compass"] },
-  });
-  mapView.on("pointer-move", () => {}); // keep hit-tests alive
+  mapView = new MapView({ container: "map", map, center: [-96, 38], zoom: 4, constraints: { snapToZoom: false }, ui: { components: ["zoom", "compass"] } });
+  mapView.on("pointer-move", () => {});
   mapView.popup.defaultPopupTemplateEnabled = false;
-  // expose for debugging
   window._mapView = mapView;
 }
-
-// ───── Basemap + theme controls ──────────────────────────────────────────────
 function buildBasemapGrid() {
-  const grid = document.getElementById("bmGrid");
-  grid.innerHTML = "";
+  const grid = document.getElementById("bmGrid"); grid.innerHTML = "";
   BASEMAPS.forEach(bm => {
     const btn = document.createElement("button");
     btn.className = "bm-opt" + (bm.id === currentBasemapId ? " active" : "");
-    btn.innerHTML = `
-      <svg class="bm-thumb" viewBox="0 0 48 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="48" height="36" fill="${bm.thumbBg}"/>
-        <path d="M0 18 Q12 10 24 18 T48 18" stroke="${bm.thumbLines}" stroke-width="1.5" fill="none" opacity="0.75"/>
-        <path d="M14 0 L14 36" stroke="${bm.thumbLines}" stroke-width="1" opacity="0.5"/>
-        <path d="M32 0 L32 36" stroke="${bm.thumbLines}" stroke-width="1" opacity="0.5"/>
-      </svg>
-      <span class="bm-label">${bm.name}</span>
-    `;
-    btn.addEventListener("click", () => selectBasemap(bm.id));
-    grid.appendChild(btn);
+    btn.innerHTML = `<svg class="bm-thumb" viewBox="0 0 48 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="36" fill="${bm.thumbBg}"/><path d="M0 18 Q12 10 24 18 T48 18" stroke="${bm.thumbLines}" stroke-width="1.5" fill="none" opacity="0.75"/><path d="M14 0 L14 36" stroke="${bm.thumbLines}" stroke-width="1" opacity="0.5"/><path d="M32 0 L32 36" stroke="${bm.thumbLines}" stroke-width="1" opacity="0.5"/></svg><span class="bm-label">${bm.name}</span>`;
+    btn.addEventListener("click", () => selectBasemap(bm.id)); grid.appendChild(btn);
   });
 }
-function selectBasemap(id) {
-  if (!mapView || !mapView.map) return;
-  currentBasemapId = id;
-  mapView.map.basemap = id;
-  buildBasemapGrid();
-  // Re-tune county outline contrast since basemap brightness changed
-  renderChoropleth();
-}
-function toggleBasemapPanel() {
-  const p = document.getElementById("basemapPanel");
-  const btn = document.getElementById("basemapBtn");
-  const showing = !p.hidden;
-  p.hidden = showing;
-  btn.classList.toggle("active", !showing);
-  if (!showing) buildBasemapGrid();
-}
+function selectBasemap(id) { if (!mapView || !mapView.map) return; currentBasemapId = id; mapView.map.basemap = id; buildBasemapGrid(); renderChoropleth(); }
+function toggleBasemapPanel() { const p = document.getElementById("basemapPanel"); const btn = document.getElementById("basemapBtn"); const showing = !p.hidden; p.hidden = showing; btn.classList.toggle("active", !showing); if (!showing) buildBasemapGrid(); }
 function applyTheme(mode) {
-  currentTheme = mode;
-  document.documentElement.setAttribute("data-theme", mode);
-  localStorage.setItem("intel:theme", mode);
-  // Swap the sun/moon icon
+  currentTheme = mode; document.documentElement.setAttribute("data-theme", mode); localStorage.setItem("intel:theme", mode);
   const icon = document.getElementById("themeIcon");
-  if (icon) {
-    icon.innerHTML = mode === "light"
-      ? '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>'
-      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
-  }
-  // If the current basemap doesn't match the theme, auto-switch to a matching one
+  if (icon) icon.innerHTML = mode === "light" ? '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>' : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
   const bm = BASEMAPS.find(b => b.id === currentBasemapId);
-  if (bm && bm.mode !== mode) {
-    const match = BASEMAPS.find(b => b.mode === mode);
-    if (match) selectBasemap(match.id);
-  }
-  // Re-render legend + choropleth to pick up var-driven colors
-  if (countyData) {
-    renderLegend();
-    renderChoropleth();
-  }
+  if (bm && bm.mode !== mode) { const match = BASEMAPS.find(b => b.mode === mode); if (match) selectBasemap(match.id); }
+  if (countyData) { renderLegend(); renderChoropleth(); }
 }
 function initMapControls() {
-  // Restore saved theme
   const saved = localStorage.getItem("intel:theme");
-  if (saved === "light" || saved === "dark") {
-    applyTheme(saved);
-    const bm = BASEMAPS.find(b => b.mode === saved);
-    if (bm) currentBasemapId = bm.id;
-  } else {
-    applyTheme("light");
-  }
+  if (saved === "light" || saved === "dark") { applyTheme(saved); const bm = BASEMAPS.find(b => b.mode === saved); if (bm) currentBasemapId = bm.id; }
+  else { applyTheme("light"); }
   document.getElementById("basemapBtn").addEventListener("click", toggleBasemapPanel);
-  document.getElementById("themeBtn").addEventListener("click", () => {
-    applyTheme(currentTheme === "dark" ? "light" : "dark");
-  });
-  // Close basemap panel on outside click
-  document.addEventListener("click", (e) => {
-    const p = document.getElementById("basemapPanel");
-    if (p.hidden) return;
-    if (e.target.closest("#basemapPanel") || e.target.closest("#basemapBtn")) return;
-    p.hidden = true;
-    document.getElementById("basemapBtn").classList.remove("active");
-  });
+  document.getElementById("themeBtn").addEventListener("click", () => applyTheme(currentTheme === "dark" ? "light" : "dark"));
+  document.addEventListener("click", (e) => { const p = document.getElementById("basemapPanel"); if (p.hidden) return; if (e.target.closest("#basemapPanel") || e.target.closest("#basemapBtn")) return; p.hidden = true; document.getElementById("basemapBtn").classList.remove("active"); });
 }
-
 function loadArcGIS() {
   return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://js.arcgis.com/4.32/";
-    script.onload = () => {
-      require([
-        "esri/Map","esri/views/MapView","esri/layers/GraphicsLayer",
-        "esri/layers/FeatureLayer","esri/Graphic","esri/geometry/Polygon",
-        "esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol",
-        "esri/rest/query","esri/rest/support/Query",
-      ], (Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query) => {
-        resolve({ Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query });
-      });
-    };
-    script.onerror = reject;
-    document.head.appendChild(script);
+    const script = document.createElement("script"); script.src = "https://js.arcgis.com/4.32/";
+    script.onload = () => { require(["esri/Map","esri/views/MapView","esri/layers/GraphicsLayer","esri/layers/FeatureLayer","esri/Graphic","esri/geometry/Polygon","esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol","esri/rest/query","esri/rest/support/Query"], (Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query) => { resolve({ Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query }); }); };
+    script.onerror = reject; document.head.appendChild(script);
   });
 }
 
 // ───── Scope activation ──────────────────────────────────────────────────────
 function showDimmer(on) { document.getElementById("dimmer").classList.toggle("on", on); }
-
 async function activateScope(scope) {
   activeScope = scope;
   document.getElementById("railEmpty").hidden = true;
+  document.getElementById("tabBar").hidden = false;
   document.getElementById("briefingSection").hidden = false;
   document.getElementById("top5Section").hidden = false;
   document.getElementById("chatSection").hidden = false;
-
+  showTab("overview");
   showDimmer(true);
-  // Fire everything in parallel — brief, data, outline
-  const [, data] = await Promise.all([
-    renderBriefing(scope),
-    fetchCountyData(scope),
-    drawScopeOutline(scope),
-  ]);
+  const [, data] = await Promise.all([renderBriefing(scope), fetchCountyData(scope), drawScopeOutline(scope)]);
   countyData = data;
   await renderChoropleth();
-  renderTop5();
-  renderLegend();
-  updateKPIs();
-  loadChat(scope);
+  renderTop5(); renderLegend(); updateKPIs(); loadChat(scope);
   showDimmer(false);
 }
-
 async function fetchCountyData(scope) {
   const u = new URLSearchParams({ type: scope.type, name: scope.name, code: scope.code || "" });
   const r = await fetch(`/api/county-data?${u}`);
@@ -1103,190 +614,102 @@ async function fetchCountyData(scope) {
 // ───── Briefing ──────────────────────────────────────────────────────────────
 async function renderBriefing(scope) {
   const briefEl = document.getElementById("briefing");
-  // v4 = briefing API rewritten to return {briefing, source} from pre-generated cache
   const key = `intel:brief:v4:${scope.type}:${scope.code || scope.name}`;
   const cached = localStorage.getItem(key);
-  if (cached) {
-    briefEl.classList.remove("loading");
-    briefEl.textContent = cached;
-    return;
-  }
-  briefEl.classList.add("loading");
-  briefEl.innerHTML = "Synthesizing…<div class=\"shimmer\"></div>";
+  if (cached) { briefEl.classList.remove("loading"); briefEl.textContent = cached; return; }
+  briefEl.classList.add("loading"); briefEl.innerHTML = "Synthesizing…<div class=\"shimmer\"></div>";
   try {
-    const r = await fetch("/api/briefing", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ scope })
-    });
+    const r = await fetch("/api/briefing", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ scope }) });
     const j = await r.json();
     const text = (j.briefing || j.answer || j.error || "").trim();
-    briefEl.classList.remove("loading");
-    briefEl.textContent = text;
+    briefEl.classList.remove("loading"); briefEl.textContent = text;
     if (j.briefing) localStorage.setItem(key, j.briefing);
-  } catch (e) {
-    briefEl.classList.remove("loading");
-    briefEl.textContent = "Briefing unavailable — try the chat below.";
-  }
+  } catch (e) { briefEl.classList.remove("loading"); briefEl.textContent = "Briefing unavailable — try the Ask tab."; }
 }
 
-// ───── Scope outline on map ──────────────────────────────────────────────────
+// ───── Scope outline ─────────────────────────────────────────────────────────
 async function drawScopeOutline(scope) {
   if (!arcgisMods) return;
-  const { Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
+  const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
   outlineLayer.removeAll();
-
   const ARC = "https://services.arcgis.com/pGfbNJoYypmNq86F/arcgis/rest/services/Master_ARC_Geography_2022/FeatureServer/";
   const layerByType = { division: "1", region: "2", chapter: "3" };
   const fieldByType = { division: "Division", region: "Region", chapter: "Chapter" };
   const url = ARC + layerByType[scope.type];
   const field = fieldByType[scope.type];
   const esc = (s) => String(s).replace(/'/g, "''");
-
-  const q = new Query({
-    where: `${field} = '${esc(scope.name)}'`,
-    returnGeometry: true,
-    outFields: ["*"],
-    outSpatialReference: { wkid: 102100 },
-  });
-
+  const q = new Query({ where: `${field} = '${esc(scope.name)}'`, returnGeometry: true, outFields: ["*"], outSpatialReference: { wkid: 102100 } });
   try {
     const result = await query.executeQueryJSON(url, q);
     if (!result.features.length) return;
-    const sym = new SimpleFillSymbol({
-      color: [237, 27, 46, 0.08],
-      outline: new SimpleLineSymbol({ color: [237, 27, 46, 0.95], width: 2.5 }),
-    });
+    const sym = new SimpleFillSymbol({ color: [237, 27, 46, 0.08], outline: new SimpleLineSymbol({ color: [237, 27, 46, 0.95], width: 2.5 }) });
     let fullExtent = null;
     for (const f of result.features) {
-      const g = new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes });
-      outlineLayer.add(g);
-      if (f.geometry.extent) {
-        fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
-      }
+      outlineLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes }));
+      if (f.geometry.extent) fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
     }
     if (fullExtent) mapView.goTo(fullExtent.expand(1.1), { duration: 900, easing: "ease-in-out" });
-  } catch (e) {
-    console.error("outline draw failed", e);
-  }
+  } catch (e) { console.error("outline draw failed", e); }
 }
 
 // ───── Choropleth ────────────────────────────────────────────────────────────
 async function renderChoropleth() {
   if (!countyData || !arcgisMods) return;
-  const { Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
+  const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
   countyLayer.removeAll();
-
   const fipsByRow = new Map();
-  for (const r of countyData.rows || []) {
-    if (r.county_fips) fipsByRow.set(String(r.county_fips).padStart(5, "0"), r);
-  }
+  for (const r of countyData.rows || []) { if (r.county_fips) fipsByRow.set(String(r.county_fips).padStart(5, "0"), r); }
   if (!fipsByRow.size) return;
-
   const COUNTY_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Counties_Generalized_Boundaries/FeatureServer/0";
   const fipsList = [...fipsByRow.keys()].map(x => `'${x}'`).join(",");
-  const q = new Query({
-    where: `FIPS IN (${fipsList})`,
-    returnGeometry: true,
-    outFields: ["FIPS", "NAME", "STATE_NAME"],
-    outSpatialReference: { wkid: 102100 },
-  });
+  const q = new Query({ where: `FIPS IN (${fipsList})`, returnGeometry: true, outFields: ["FIPS", "NAME", "STATE_NAME"], outSpatialReference: { wkid: 102100 } });
   let result;
-  try {
-    result = await query.executeQueryJSON(COUNTY_URL, q);
-  } catch (e) {
-    console.error("county query failed, trying fallback", e);
-    return;
-  }
-
+  try { result = await query.executeQueryJSON(COUNTY_URL, q); } catch (e) { console.error("county query failed", e); return; }
   const meta = METRIC_META[activeMetric];
-  const ramp = RAMP;
-  // Theme-aware county outline so it reads on both dark and light basemaps.
   const outlineColor = currentTheme === "light" ? [30, 30, 30, 0.35] : [255, 255, 255, 0.22];
-
   for (const f of result.features) {
     const fips = String(f.attributes.FIPS).padStart(5, "0");
-    const row = fipsByRow.get(fips);
-    if (!row) continue;
+    const row = fipsByRow.get(fips); if (!row) continue;
     const v = Number(row[activeMetric]);
-    const color = valueToColor(v, meta, ramp);
-    const sym = new SimpleFillSymbol({
-      color,
-      outline: new SimpleLineSymbol({ color: outlineColor, width: 0.5 }),
-    });
-    const g = new Graphic({
-      geometry: f.geometry,
-      symbol: sym,
-      attributes: { ...row, __display_name: `${row.county_name}, ${row.state_abbr}` },
-      popupTemplate: {
-        title: "{county_name}, {state_abbr}",
-        content: countyPopup,
-      },
-    });
-    countyLayer.add(g);
+    const color = valueToColor(v, meta, RAMP);
+    const sym = new SimpleFillSymbol({ color, outline: new SimpleLineSymbol({ color: outlineColor, width: 0.5 }) });
+    countyLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: { ...row, __display_name: `${row.county_name}, ${row.state_abbr}` }, popupTemplate: { title: "{county_name}, {state_abbr}", content: countyPopup } }));
   }
 }
-
 function valueToColor(v, meta, ramp) {
-  // Missing data → soft neutral that reads on both themes
-  if (v == null || Number.isNaN(v)) {
-    return currentTheme === "light" ? [200, 200, 200, 0.55] : [90, 90, 90, 0.4];
-  }
+  if (v == null || Number.isNaN(v)) return currentTheme === "light" ? [200, 200, 200, 0.55] : [90, 90, 90, 0.4];
   const t = Math.max(0, Math.min(1, (v - meta.min) / (meta.max - meta.min)));
   const idx = Math.min(ramp.length - 1, Math.floor(t * (ramp.length - 0.001)));
   const hex = ramp[idx];
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
   return [r, g, b, 0.88];
 }
-
 function countyPopup(feature) {
   const a = feature.graphic.attributes;
   const pct = a.pct_struggling != null ? a.pct_struggling.toFixed(1) + "%" : "—";
   const risk = a.risk_score != null ? a.risk_score.toFixed(0) : "—";
   const eal = a.expected_annual_loss != null ? "$" + shortNum(a.expected_annual_loss) : "—";
-  const hazards = HAZARD_KEYS
-    .map(k => ({ k, v: a[k] }))
-    .filter(x => x.v != null)
-    .sort((x, y) => y.v - x.v)
-    .slice(0, 3)
-    .map(x => `<span style="display:inline-block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:4px 10px;border-radius:6px;margin-right:6px;margin-bottom:4px;font-size:13px;font-weight:600;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`)
-    .join("");
-  return `
-    <div style="font:15px/1.5 'Inter',system-ui,sans-serif;padding:4px 0;min-width:280px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
-          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Population</div>
-          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${fmtNum(a.population)}</div>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
-          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Risk Score</div>
-          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${risk}<span style="font-size:13px;color:#64748b;font-weight:500;">/100</span></div>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
-          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Struggling</div>
-          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${pct}</div>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
-          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Annual Loss</div>
-          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${eal}</div>
-        </div>
-      </div>
-      <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;">Top Hazards</div>
-      <div style="margin-bottom:12px;">${hazards || "<em style='color:#64748b;'>none ranked</em>"}</div>
-      <div style="border-top:1px solid #e2e8f0;padding-top:10px;font-size:14px;color:#334155;">Chapter: <span style="font-weight:700;color:#0f172a;">${a.chapter || "—"}</span></div>
+  const hazards = HAZARD_KEYS.map(k => ({ k, v: a[k] })).filter(x => x.v != null).sort((x, y) => y.v - x.v).slice(0, 3)
+    .map(x => `<span style="display:inline-block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:4px 10px;border-radius:6px;margin-right:6px;margin-bottom:4px;font-size:13px;font-weight:600;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`).join("");
+  return `<div style="font:15px/1.5 'Inter',system-ui,sans-serif;padding:4px 0;min-width:280px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Population</div><div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${fmtNum(a.population)}</div></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Risk Score</div><div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${risk}<span style="font-size:13px;color:#64748b;font-weight:500;">/100</span></div></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Struggling</div><div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${pct}</div></div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Annual Loss</div><div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${eal}</div></div>
     </div>
-  `;
+    <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;">Top Hazards</div>
+    <div style="margin-bottom:12px;">${hazards || "<em style='color:#64748b;'>none ranked</em>"}</div>
+    <div style="border-top:1px solid #e2e8f0;padding-top:10px;font-size:14px;color:#334155;">Chapter: <span style="font-weight:700;color:#0f172a;">${a.chapter || "—"}</span></div></div>`;
 }
 
 // ───── Legend ────────────────────────────────────────────────────────────────
 function renderLegend() {
-  const meta = METRIC_META[activeMetric];
-  const ramp = RAMPS[meta.ramp];
+  const meta = METRIC_META[activeMetric]; const ramp = RAMPS[meta.ramp];
   document.getElementById("legend").hidden = false;
   document.getElementById("legendTitle").textContent = meta.label;
   document.getElementById("legendBar").innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join("");
-  document.getElementById("legendLabels").innerHTML =
-    `<span>${meta.fmt(meta.min)}</span><span>${meta.fmt(meta.max)}</span>`;
+  document.getElementById("legendLabels").innerHTML = `<span>${meta.fmt(meta.min)}</span><span>${meta.fmt(meta.max)}</span>`;
 }
 
 // ───── Top 5 ─────────────────────────────────────────────────────────────────
@@ -1294,22 +717,11 @@ function renderTop5() {
   if (!countyData) return;
   const meta = METRIC_META[activeMetric];
   document.getElementById("top5MetricLabel").textContent = `by ${meta.label.toLowerCase()}`;
-  const rows = [...(countyData.rows || [])]
-    .filter(r => r[activeMetric] != null)
-    .sort((a, b) => b[activeMetric] - a[activeMetric])
-    .slice(0, 5);
+  const rows = [...(countyData.rows || [])].filter(r => r[activeMetric] != null).sort((a, b) => b[activeMetric] - a[activeMetric]).slice(0, 5);
   const host = document.getElementById("top5");
-  host.innerHTML = rows.map((r, i) => `
-    <div class="top5-row" data-fips="${r.county_fips}">
-      <div class="top5-rank">${i+1}</div>
-      <div class="top5-name">${r.county_name} <span class="state">${r.state_abbr}</span></div>
-      <div class="top5-val">${meta.fmt(r[activeMetric])}</div>
-    </div>`).join("");
-  host.querySelectorAll(".top5-row").forEach(row => {
-    row.addEventListener("click", () => zoomToFips(row.dataset.fips));
-  });
+  host.innerHTML = rows.map((r, i) => `<div class="top5-row" data-fips="${r.county_fips}"><div class="top5-rank">${i+1}</div><div class="top5-name">${r.county_name} <span class="state">${r.state_abbr}</span></div><div class="top5-val">${meta.fmt(r[activeMetric])}</div></div>`).join("");
+  host.querySelectorAll(".top5-row").forEach(row => { row.addEventListener("click", () => zoomToFips(row.dataset.fips)); });
 }
-
 function zoomToFips(fips) {
   if (!countyLayer) return;
   const g = countyLayer.graphics.find(x => String(x.attributes.county_fips).padStart(5,"0") === String(fips).padStart(5,"0"));
@@ -1318,7 +730,7 @@ function zoomToFips(fips) {
   mapView.popup.open({ features: [g], location: g.geometry.centroid });
 }
 
-// ───── KPI strip ─────────────────────────────────────────────────────────────
+// ───── KPI ───────────────────────────────────────────────────────────────────
 function updateKPIs() {
   if (!countyData) return;
   const rows = countyData.rows || [];
@@ -1326,133 +738,59 @@ function updateKPIs() {
   const riskAvg = avg(rows.map(r => r.risk_score));
   const struggAvg = avg(rows.map(r => r.pct_struggling));
   const ealSum = rows.reduce((s, r) => s + (r.expected_annual_loss || 0), 0);
-
   document.getElementById("kpiCounties").textContent = rows.length;
   document.getElementById("kpiPopulation").textContent = popTotal ? `${fmtNum(popTotal)} people` : "";
   document.getElementById("kpiRisk").textContent = riskAvg != null ? riskAvg.toFixed(0) : "—";
   document.getElementById("kpiStruggling").textContent = struggAvg != null ? struggAvg.toFixed(1) + "%" : "—";
   document.getElementById("kpiEAL").textContent = "$" + shortNum(ealSum);
-
-  // National benchmark
   const nat = countyData.national || {};
-  if (riskAvg != null && nat.p50_risk != null) {
-    const delta = riskAvg - nat.p50_risk;
-    document.getElementById("kpiRiskPctl").textContent =
-      `${delta >= 0 ? "+" : ""}${delta.toFixed(0)} vs US median`;
-  }
-  if (struggAvg != null && nat.p50_struggling != null) {
-    const delta = struggAvg - nat.p50_struggling;
-    document.getElementById("kpiStrugglingPctl").textContent =
-      `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}pp vs US median`;
-  }
-
-  // Top hazard: highest average hazard score in scope
+  if (riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
+  if (struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
   const hazAvgs = HAZARD_KEYS.map(k => ({ k, v: avg(rows.map(r => r[k])) })).filter(x => x.v != null);
   hazAvgs.sort((a, b) => b.v - a.v);
   const top = hazAvgs[0];
-  if (top) {
-    document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k];
-    document.getElementById("kpiHazardVal").textContent = `avg ${top.v.toFixed(0)}/100`;
-  }
+  if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `avg ${top.v.toFixed(0)}/100`; }
 }
-function avg(arr) {
-  const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number);
-  return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
-}
+function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
 
 // ───── Chat ──────────────────────────────────────────────────────────────────
 function chatKey(scope) { return `intel:chat:v3:${scope.type}:${scope.code || scope.name}`; }
-function loadChat(scope) {
-  try { chatHistory = JSON.parse(localStorage.getItem(chatKey(scope)) || "[]"); }
-  catch { chatHistory = []; }
-  renderChat();
-}
+function loadChat(scope) { try { chatHistory = JSON.parse(localStorage.getItem(chatKey(scope)) || "[]"); } catch { chatHistory = []; } renderChat(); }
 function saveChat(scope) { localStorage.setItem(chatKey(scope), JSON.stringify(chatHistory.slice(-30))); }
-
 function renderChat() {
   const el = document.getElementById("messages");
-  el.innerHTML = chatHistory.map(m =>
-    `<div class="msg ${m.role}${m.pending ? " pending" : ""}">${m.role === "user" ? (m.text || "").replace(/</g,"&lt;") : mdToHtml(m.text || "")}</div>`
-  ).join("");
+  el.innerHTML = chatHistory.map(m => `<div class="msg ${m.role}${m.pending ? " pending" : ""}">${m.role === "user" ? (m.text || "").replace(/</g,"&lt;") : mdToHtml(m.text || "")}</div>`).join("");
   el.scrollTop = el.scrollHeight;
-  // Hide suggestions once there are messages
-  const sug = document.getElementById("suggestions");
-  if (sug) sug.hidden = chatHistory.length > 0;
+  const sug = document.getElementById("suggestions"); if (sug) sug.hidden = chatHistory.length > 0;
 }
-
 function initChat() {
-  const form = document.getElementById("askForm");
-  const q = document.getElementById("q");
-  const btn = document.getElementById("sendBtn");
+  const form = document.getElementById("askForm"); const q = document.getElementById("q"); const btn = document.getElementById("sendBtn");
   q.addEventListener("input", () => { q.style.height = "auto"; q.style.height = Math.min(100, q.scrollHeight) + "px"; });
-  q.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-  });
+  q.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
   form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!activeScope) return;
+    e.preventDefault(); if (!activeScope) return;
     const text = q.value.trim(); if (!text) return;
     q.value = ""; q.style.height = "auto"; btn.disabled = true;
-    chatHistory.push({ role:"user", text });
-    chatHistory.push({ role:"bot", text:"Thinking…", pending:true });
-    renderChat();
+    chatHistory.push({ role:"user", text }); chatHistory.push({ role:"bot", text:"Thinking…", pending:true }); renderChat();
     try {
-      const r = await fetch("/api/ask", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ question: text, scope: activeScope }),
-      });
-      const j = await r.json();
-      chatHistory.pop();
+      const r = await fetch("/api/ask", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ question: text, scope: activeScope }) });
+      const j = await r.json(); chatHistory.pop();
       chatHistory.push({ role:"bot", text: r.ok ? (j.answer || "(no answer)") : `Error: ${j.error || r.status}` });
-    } catch (x) {
-      chatHistory.pop();
-      chatHistory.push({ role:"bot", text: "Network error: " + x.message });
-    }
-    saveChat(activeScope);
-    collapseAccordions();
-    renderChat();
-    btn.disabled = false;
+    } catch (x) { chatHistory.pop(); chatHistory.push({ role:"bot", text: "Network error: " + x.message }); }
+    saveChat(activeScope); renderChat(); btn.disabled = false;
   });
 }
+function initSuggestions() { document.querySelectorAll('.suggestion').forEach(btn => { btn.addEventListener('click', () => { document.getElementById('q').value = btn.textContent; document.getElementById('askForm').requestSubmit(); }); }); }
 
-// ───── Suggestion chips ─────────────────────────────────────────────────────
-function initSuggestions() {
-  document.querySelectorAll('.suggestion').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const q = document.getElementById('q');
-      q.value = btn.textContent;
-      document.getElementById('askForm').requestSubmit();
-    });
-  });
-}
-
-// ───── Accordions ───────────────────────────────────────────────────────────
-document.querySelectorAll(".section.collapsible h3").forEach(h3 => {
-  h3.addEventListener("click", () => {
-    h3.closest(".section").classList.toggle("collapsed");
-  });
-});
-
-function collapseAccordions() {
-  document.querySelectorAll(".section.collapsible").forEach(s => s.classList.add("collapsed"));
-}
-function expandAccordions() {
-  document.querySelectorAll(".section.collapsible").forEach(s => s.classList.remove("collapsed"));
-}
+// ───── Accordion compat (now no-ops — replaced by tabs) ─────────────────────
+function collapseAccordions() {}
+function expandAccordions() { document.querySelectorAll(".tab-panel").forEach(p => { p.hidden = false; p.style.display = "block"; }); }
 
 // ───── Print ────────────────────────────────────────────────────────────────
-document.getElementById("printBtn").addEventListener("click", () => {
-  expandAccordions();
-  setTimeout(() => window.print(), 100);
-});
+document.getElementById("printBtn").addEventListener("click", () => { expandAccordions(); setTimeout(() => window.print(), 100); });
 
 // ───── Logout ────────────────────────────────────────────────────────────────
-function initLogout() {
-  document.getElementById("logout").addEventListener("click", async () => {
-    await fetch("/api/logout", { method:"POST" });
-    location.href = "/login";
-  });
-}
+function initLogout() { document.getElementById("logout").addEventListener("click", async () => { await fetch("/api/logout", { method:"POST" }); location.href = "/login"; }); }
 </script>
 </body>
 </html>
