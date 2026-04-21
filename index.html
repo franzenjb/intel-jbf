@@ -737,6 +737,12 @@
 </div>
 
 <script>
+// ───── One-time theme migration (v2 redesign → light default) ────────────────
+if (localStorage.getItem("intel:ui_version") !== "2") {
+  localStorage.removeItem("intel:theme");
+  localStorage.setItem("intel:ui_version", "2");
+}
+
 // ───── Gate: ensure authed ───────────────────────────────────────────────────
 (async () => {
   try {
