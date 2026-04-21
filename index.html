@@ -119,6 +119,11 @@
   }
   #app.has-scope aside#rail { display: flex; }
 
+  /* ───── Scope header in sidebar ─────────────────────────────────────────── */
+  .scope-header { padding: 20px 20px 0; background: var(--panel); border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-shrink: 0; }
+  .scope-badge { display: inline-block; background: var(--red); color: #fff; font: 700 10px/1 inherit; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .scope-name-display { font: 800 17px/1.3 inherit; color: var(--fg); margin-top: 8px; letter-spacing: -0.2px; }
+
   /* ───── Tab bar ─────────────────────────────────────────────────────────── */
   .tab-bar {
     display: flex; gap: 6px; padding: 16px 20px;
@@ -301,6 +306,10 @@
   </header>
 
   <aside id="rail">
+    <div class="scope-header" id="scopeHeader">
+      <span class="scope-badge" id="scopeBadge"></span>
+      <h2 class="scope-name-display" id="scopeNameDisplay"></h2>
+    </div>
     <div class="tab-bar" id="tabBar">
       <button class="tab active" data-tab="overview">Overview</button>
       <button class="tab" data-tab="counties">Counties</button>
@@ -611,14 +620,22 @@ function showDimmer(on) { document.getElementById("dimmer").classList.toggle("on
 async function activateScope(scope) {
   activeScope = scope;
   document.getElementById("app").classList.add("has-scope");
+  document.getElementById("scopeBadge").textContent = scope.type.toUpperCase();
+  document.getElementById("scopeNameDisplay").textContent = scope.name;
   document.getElementById("briefingSection").hidden = false;
   document.getElementById("top5Section").hidden = false;
   document.getElementById("chatSection").hidden = false;
   showTab("overview");
   showDimmer(true);
-  const [, data] = await Promise.all([renderBriefing(scope), fetchCountyData(scope), drawScopeOutline(scope)]);
+  const [, data, didZoom] = await Promise.all([renderBriefing(scope), fetchCountyData(scope), drawScopeOutline(scope)]);
   countyData = data;
   await renderChoropleth();
+  // Fallback: zoom to county polygons if scope outline query missed
+  if (!didZoom && countyLayer && countyLayer.graphics.length > 0) {
+    let ext = null;
+    countyLayer.graphics.forEach(g => { if (g.geometry?.extent) ext = ext ? ext.union(g.geometry.extent) : g.geometry.extent.clone(); });
+    if (ext) mapView.goTo(ext.expand(1.3), { duration: 900 });
+  }
   renderTop5(); renderLegend(); updateKPIs(); loadChat(scope);
   showDimmer(false);
 }
@@ -647,7 +664,7 @@ async function renderBriefing(scope) {
 
 // ───── Scope outline ─────────────────────────────────────────────────────────
 async function drawScopeOutline(scope) {
-  if (!arcgisMods) return;
+  if (!arcgisMods) return false;
   const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
   outlineLayer.removeAll();
   const ARC = "https://services.arcgis.com/pGfbNJoYypmNq86F/arcgis/rest/services/Master_ARC_Geography_2022/FeatureServer/";
@@ -659,7 +676,7 @@ async function drawScopeOutline(scope) {
   const q = new Query({ where: `${field} = '${esc(scope.name)}'`, returnGeometry: true, outFields: ["*"], outSpatialReference: { wkid: 102100 } });
   try {
     const result = await query.executeQueryJSON(url, q);
-    if (!result.features.length) return;
+    if (!result.features.length) return false;
     const sym = new SimpleFillSymbol({ color: [237, 27, 46, 0.08], outline: new SimpleLineSymbol({ color: [237, 27, 46, 0.95], width: 2.5 }) });
     let fullExtent = null;
     for (const f of result.features) {
@@ -667,7 +684,8 @@ async function drawScopeOutline(scope) {
       if (f.geometry.extent) fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
     }
     if (fullExtent) mapView.goTo(fullExtent.expand(1.1), { duration: 900, easing: "ease-in-out" });
-  } catch (e) { console.error("outline draw failed", e); }
+    return true;
+  } catch (e) { console.error("outline draw failed", e); return false; }
 }
 
 // ───── Choropleth ────────────────────────────────────────────────────────────
