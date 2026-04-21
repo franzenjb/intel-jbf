@@ -247,15 +247,21 @@
   .esri-popup { display: none !important; }
 
   /* ───── County detail tab content ───────────────────────────────────────── */
-  .county-header h2 { font: 800 20px/1.2 inherit; color: var(--fg); margin-bottom: 4px; letter-spacing: -0.3px; }
-  .county-chapter { color: var(--muted); font-size: 14px; font-weight: 500; }
-  .hazard-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .county-header h2 { font: 800 18px/1.2 inherit; color: var(--fg); margin-bottom: 2px; letter-spacing: -0.3px; }
+  .county-chapter { color: var(--muted); font-size: 13px; font-weight: 500; }
+  .hazard-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
   .hazard-row:last-child { border-bottom: 0; }
   .hazard-name { font: 600 13px/1 inherit; color: var(--fg2); min-width: 90px; }
   .hazard-bar-track { flex: 1; height: 10px; background: var(--panel2); border-radius: 5px; overflow: hidden; border: 1px solid var(--border); }
   .hazard-bar-fill { height: 100%; background: linear-gradient(90deg, #feb24c, #e31a1c); border-radius: 5px; }
   .hazard-score { font: 700 14px/1 ui-monospace,monospace; color: var(--fg); min-width: 28px; text-align: right; }
   .kpi-unit { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .kpi-grid-3 { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .kpi-sm { padding: 10px 14px; }
+  .kpi-sm .kpi-label { font-size: 10px; }
+  .kpi-sm .kpi-value { font-size: 20px; margin-top: 4px; }
+  .kpi-sm .kpi-sub { font-size: 11px; margin-top: 3px; }
+  .kpi-sm .kpi-unit { font-size: 12px; }
 
   #gate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 
@@ -399,7 +405,7 @@
         </form>
       </div>
     </div>
-    <div class="tab-panel" data-panel="county" hidden>
+    <div class="tab-panel" data-panel="county" hidden style="padding:14px 16px;">
       <div id="countyDetailContent"></div>
     </div>
   </aside>
@@ -758,24 +764,23 @@ function showCountyDetail(attrs) {
   showTab("county");
 }
 function buildCountyDetailHTML(a) {
-  const pct = a.pct_struggling != null ? a.pct_struggling.toFixed(1) + "%" : "—";
-  const alice = a.pct_alice != null ? a.pct_alice.toFixed(1) + "%" : "—";
-  const poverty = a.poverty_pct != null ? a.poverty_pct.toFixed(1) + "%" : "—";
+  const pop = a.population || 0;
+  const pplCount = (pct) => pct != null && pop ? fmtNum(Math.round(pop * pct / 100)) : "—";
   const risk = a.risk_score != null ? a.risk_score.toFixed(0) : "—";
   const eal = a.expected_annual_loss != null ? "$" + shortNum(a.expected_annual_loss) : "—";
   const hazards = HAZARD_KEYS.map(k => ({ k, v: a[k] })).filter(x => x.v != null).sort((x, y) => y.v - x.v).slice(0, 5);
   const hazardHTML = hazards.map(x => `<div class="hazard-row"><span class="hazard-name">${HAZARD_PRETTY[x.k]}</span><div class="hazard-bar-track"><div class="hazard-bar-fill" style="width:${x.v}%"></div></div><span class="hazard-score">${x.v.toFixed(0)}</span></div>`).join("");
   return `
-    <div class="county-header"><h2>${a.county_name}, ${a.state_abbr}</h2><p class="county-chapter">Chapter: ${a.chapter || "—"}</p></div>
-    <div class="kpi-grid" style="margin-top:16px;">
-      <div class="kpi-card"><div class="kpi-label">Population</div><div class="kpi-value">${fmtNum(a.population)}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Risk Score</div><div class="kpi-value">${risk}<span class="kpi-unit">/100</span></div></div>
-      <div class="kpi-card"><div class="kpi-label">ALICE</div><div class="kpi-value">${alice}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Poverty</div><div class="kpi-value">${poverty}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Combined Hardship</div><div class="kpi-value">${pct}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Annual Loss</div><div class="kpi-value">${eal}</div></div>
+    <div class="county-header"><h2>${a.county_name}, ${a.state_abbr}</h2><p class="county-chapter">${a.chapter || "—"}</p></div>
+    <div class="kpi-grid kpi-grid-3" style="margin-top:12px;">
+      <div class="kpi-card kpi-sm"><div class="kpi-label">Population</div><div class="kpi-value">${fmtNum(pop)}</div></div>
+      <div class="kpi-card kpi-sm"><div class="kpi-label">Risk Score</div><div class="kpi-value">${risk}<span class="kpi-unit">/100</span></div></div>
+      <div class="kpi-card kpi-sm"><div class="kpi-label">Annual Loss</div><div class="kpi-value">${eal}</div></div>
+      <div class="kpi-card kpi-sm"><div class="kpi-label">ALICE</div><div class="kpi-value">${pplCount(a.pct_alice)}</div><div class="kpi-sub">${a.pct_alice != null ? a.pct_alice.toFixed(1) + "%" : ""}</div></div>
+      <div class="kpi-card kpi-sm"><div class="kpi-label">Poverty</div><div class="kpi-value">${pplCount(a.poverty_pct)}</div><div class="kpi-sub">${a.poverty_pct != null ? a.poverty_pct.toFixed(1) + "%" : ""}</div></div>
+      <div class="kpi-card kpi-sm"><div class="kpi-label">Combined</div><div class="kpi-value">${pplCount(a.pct_struggling)}</div><div class="kpi-sub">${a.pct_struggling != null ? a.pct_struggling.toFixed(1) + "%" : ""}</div></div>
     </div>
-    <div class="card" style="margin-top:16px;"><h3><span class="dot"></span>Top Hazards</h3>${hazardHTML || "<p style='color:var(--muted)'>No hazard data</p>"}</div>`;
+    <div style="margin-top:12px;"><div style="font:700 12px/1 inherit;color:var(--fg2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Top Hazards</div>${hazardHTML || "<p style='color:var(--muted)'>No hazard data</p>"}</div>`;
 }
 
 // ───── Legend ────────────────────────────────────────────────────────────────
