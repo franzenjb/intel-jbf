@@ -1249,19 +1249,31 @@ function countyPopup(feature) {
     .filter(x => x.v != null)
     .sort((x, y) => y.v - x.v)
     .slice(0, 3)
-    .map(x => `<span style="background:rgba(120,120,120,0.18);padding:2px 6px;border-radius:3px;margin-right:4px;font-size:11px;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`)
+    .map(x => `<span style="display:inline-block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:4px 10px;border-radius:6px;margin-right:6px;margin-bottom:4px;font-size:13px;font-weight:600;">${HAZARD_PRETTY[x.k]} ${x.v.toFixed(0)}</span>`)
     .join("");
   return `
-    <div style="font:13px/1.4 sans-serif;">
-      <div style="display:flex;gap:12px;margin-bottom:8px;">
-        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">Population</div><div style="font-weight:700;">${fmtNum(a.population)}</div></div>
-        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">Risk</div><div style="font-weight:700;">${risk}</div></div>
-        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">Struggling</div><div style="font-weight:700;">${pct}</div></div>
-        <div><div style="font-size:10px;color:#666;text-transform:uppercase;">EAL</div><div style="font-weight:700;">${eal}</div></div>
+    <div style="font:15px/1.5 'Inter',system-ui,sans-serif;padding:4px 0;min-width:280px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Population</div>
+          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${fmtNum(a.population)}</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Risk Score</div>
+          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${risk}<span style="font-size:13px;color:#64748b;font-weight:500;">/100</span></div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Struggling</div>
+          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${pct}</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Annual Loss</div>
+          <div style="font-weight:800;font-size:18px;color:#0f172a;margin-top:2px;">${eal}</div>
+        </div>
       </div>
-      <div style="font-size:10px;color:#666;text-transform:uppercase;margin-bottom:4px;">Top hazards</div>
-      <div>${hazards || "<em>none ranked</em>"}</div>
-      <div style="margin-top:8px;font-size:11px;color:#666;">Chapter: <span style="font-weight:700;">${a.chapter || "—"}</span></div>
+      <div style="font-size:12px;color:#334155;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;">Top Hazards</div>
+      <div style="margin-bottom:12px;">${hazards || "<em style='color:#64748b;'>none ranked</em>"}</div>
+      <div style="border-top:1px solid #e2e8f0;padding-top:10px;font-size:14px;color:#334155;">Chapter: <span style="font-weight:700;color:#0f172a;">${a.chapter || "—"}</span></div>
     </div>
   `;
 }
