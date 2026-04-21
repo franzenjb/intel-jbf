@@ -64,7 +64,7 @@
   #app {
     display: grid;
     grid-template-columns: 500px 1fr;
-    grid-template-rows: 64px 1fr 100px;
+    grid-template-rows: 64px 1fr auto;
     grid-template-areas:
       "header header"
       "rail map"
@@ -511,7 +511,7 @@
   }
   .kpi {
     flex: 1;
-    padding: 14px 24px;
+    padding: 16px 24px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -520,27 +520,29 @@
   }
   .kpi:last-child { border-right: 0; }
   .kpi-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--fg2);
     text-transform: uppercase;
     letter-spacing: 0.6px;
     font-weight: 700;
+    line-height: 1;
   }
   .kpi-value {
-    font: 700 28px/1.1 inherit;
+    font: 700 26px/1 inherit;
     color: var(--fg);
-    margin-top: 4px;
+    margin-top: 6px;
     letter-spacing: -0.5px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .kpi-value.big { font-size: 32px; letter-spacing: -0.7px; }
+  .kpi-value.big { font-size: 26px; letter-spacing: -0.5px; }
   .kpi-sub {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
-    margin-top: 3px;
+    margin-top: 4px;
     font-weight: 500;
+    line-height: 1;
   }
 
   /* ───── Loading / pending states ─────────────────────────────────────────── */
