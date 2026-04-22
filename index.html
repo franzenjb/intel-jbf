@@ -580,18 +580,17 @@ if (localStorage.getItem("intel:ui_version") !== "3") {
 function mdToHtml(md) {
   if (!md) return "";
   const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
-  // Split into lines, process tables as blocks, then inline formatting
+  const inline = (s) => s.replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
   const lines = md.split("\n");
   const blocks = [];
   let i = 0;
   while (i < lines.length) {
-    // Detect table: line with pipes, followed by separator row (|---|)
     if (lines[i].trim().startsWith("|") && i + 1 < lines.length && /^\|[\s\-:|]+\|$/.test(lines[i+1].trim())) {
-      const headerCells = lines[i].split("|").filter((_, j, a) => j > 0 && j < a.length - 1).map(c => esc(c.trim()));
-      i += 2; // skip header + separator
+      const headerCells = lines[i].split("|").filter((_, j, a) => j > 0 && j < a.length - 1).map(c => inline(esc(c.trim())));
+      i += 2;
       const rows = [];
       while (i < lines.length && lines[i].trim().startsWith("|")) {
-        const cells = lines[i].split("|").filter((_, j, a) => j > 0 && j < a.length - 1).map(c => esc(c.trim()));
+        const cells = lines[i].split("|").filter((_, j, a) => j > 0 && j < a.length - 1).map(c => inline(esc(c.trim())));
         rows.push(cells);
         i++;
       }
@@ -600,10 +599,7 @@ function mdToHtml(md) {
       html += '</tbody></table>';
       blocks.push(html);
     } else {
-      let line = esc(lines[i]);
-      line = line.replace(/`([^`]+)`/g, "<code>$1</code>");
-      line = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      line = line.replace(/\*(.+?)\*/g, "<em>$1</em>");
+      let line = inline(esc(lines[i]));
       // Headers
       if (/^#{1,4}\s/.test(lines[i])) {
         const lvl = lines[i].match(/^(#{1,4})\s/)[1].length;
