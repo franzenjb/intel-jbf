@@ -1046,6 +1046,8 @@ function showCountyDetail(attrs) {
   kpiEl.innerHTML = buildCountyDetailHTML(attrs);
   kpiEl.className = "";
   showTab("overview");
+  // Fetch narrative from knowledge graph in background
+  fetchCountyNarrative(attrs.county_name, attrs.state_abbr, String(attrs.county_fips).padStart(5, "0"));
 }
 function buildCountyDetailHTML(a) {
   const pop = a.population || 0;
@@ -1064,7 +1066,35 @@ function buildCountyDetailHTML(a) {
       <div class="kpi-card kpi-sm"><div class="kpi-label">Poverty</div><div class="kpi-value">${pplCount(a.poverty_pct)}</div><div class="kpi-sub">${a.poverty_pct != null ? a.poverty_pct.toFixed(1) + "%" : ""}</div></div>
       <div class="kpi-card kpi-sm"><div class="kpi-label">Combined</div><div class="kpi-value">${pplCount(a.pct_struggling)}</div><div class="kpi-sub">${a.pct_struggling != null ? a.pct_struggling.toFixed(1) + "%" : ""}</div></div>
     </div>
-    <div style="margin-top:12px;"><div style="font:700 12px/1 inherit;color:var(--fg2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Top Hazards</div>${hazardHTML || "<p style='color:var(--muted)'>No hazard data</p>"}</div>`;
+    <div style="margin-top:12px;"><div style="font:700 12px/1 inherit;color:var(--fg2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Top Hazards</div>${hazardHTML || "<p style='color:var(--muted)'>No hazard data</p>"}</div>
+    <div class="card" style="margin-top:12px;" id="countyNarrative">
+      <h3><span class="dot"></span>About This County</h3>
+      <div id="narrativeText" style="font-size:14px;line-height:1.7;color:var(--fg2);font-style:italic;color:var(--muted);">Loading narrative&hellip;</div>
+    </div>`;
+}
+
+async function fetchCountyNarrative(countyName, stateAbbr, fips) {
+  const el = document.getElementById("narrativeText");
+  if (!el) return;
+  const cacheKey = `intel:narrative:${fips}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) { el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.textContent = cached; return; }
+  try {
+    const question = `In 100-150 words, describe ${countyName}, ${stateAbbr}. Cover its geography, economy, demographics, and any notable community features or disaster history. Write in plain prose, no bullet points, no tables, no markdown formatting.`;
+    const r = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, scope: { type: "county", name: `${countyName}, ${stateAbbr}`, code: fips } }) });
+    const j = await r.json();
+    const text = (j.answer || "").replace(/---[\s\S]*$/, "").replace(/\*\*/g, "").trim();
+    if (text && text.length > 20 && !text.includes("iteration limit")) {
+      el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.textContent = text;
+      localStorage.setItem(cacheKey, text);
+    } else {
+      el.textContent = "Narrative unavailable for this county.";
+      el.style.fontStyle = "normal";
+    }
+  } catch (e) {
+    el.textContent = "Narrative unavailable.";
+    el.style.fontStyle = "normal";
+  }
 }
 
 // ───── Legend ────────────────────────────────────────────────────────────────
