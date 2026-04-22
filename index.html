@@ -375,6 +375,7 @@
         <button data-type="division">Division</button>
         <button data-type="region">Region</button>
         <button data-type="chapter">Chapter</button>
+        <button data-type="county" id="countyTypeBtn" hidden>County</button>
       </div>
       <div class="combo" id="comboWrap">
         <input id="scopeNameInput" type="text" placeholder="Loading…" autocomplete="off" spellcheck="false" />
@@ -420,7 +421,6 @@
       <button class="tab active" data-tab="overview">Overview</button>
       <button class="tab" data-tab="counties">Counties</button>
       <button class="tab" data-tab="ask">Ask</button>
-      <button class="tab" data-tab="county" id="countyTab" hidden>County</button>
     </div>
 
     <div class="tab-panel" data-panel="overview" hidden>
@@ -485,9 +485,6 @@
         <p style="color:var(--fg2);font-size:15px;margin-bottom:16px;">Ask natural language questions powered by SQL + Knowledge Graph</p>
         <button class="icon-btn" id="openAskBtn" style="background:var(--red);color:#fff;border-color:var(--red);padding:14px 32px;font-size:15px;border-radius:12px;">Open Ask Intel</button>
       </div>
-    </div>
-    <div class="tab-panel" data-panel="county" hidden style="padding:14px 16px;">
-      <div id="countyDetailContent"></div>
     </div>
   </aside>
 
@@ -800,6 +797,12 @@ async function activateScope(scope) {
   document.getElementById("scopeBadge").textContent = scope.type.toUpperCase();
   document.getElementById("scopeNameDisplay").textContent = scope.name;
   updateBreadcrumb(scope);
+  // Hide county button when switching to non-county scope
+  if (scope.type !== "county") {
+    document.getElementById("countyTypeBtn").hidden = true;
+    const kpiEl = document.getElementById("kpiGrid");
+    kpiEl.className = "kpi-grid";
+  }
   document.getElementById("briefingSection").hidden = false;
   document.getElementById("top5Section").hidden = false;
   showTab("overview");
@@ -935,11 +938,24 @@ function valueToColor(v, meta, ramp) {
 }
 // ───── County detail in sidebar ──────────────────────────────────────────────
 function showCountyDetail(attrs) {
-  const tab = document.getElementById("countyTab");
-  tab.hidden = false;
-  tab.textContent = attrs.county_name || "County";
-  document.getElementById("countyDetailContent").innerHTML = buildCountyDetailHTML(attrs);
-  showTab("county");
+  // Show "County" as 5th scope level in header
+  const countyBtn = document.getElementById("countyTypeBtn");
+  countyBtn.hidden = false;
+  countyBtn.textContent = attrs.county_name || "County";
+  // Activate county scope in the header tabs
+  document.querySelectorAll(".type-tabs button").forEach(b => b.classList.toggle("active", b === countyBtn));
+  document.getElementById("comboWrap").hidden = true;
+  // Update sidebar to show county detail
+  document.getElementById("scopeBadge").textContent = "COUNTY";
+  document.getElementById("scopeNameDisplay").textContent = `${attrs.county_name}, ${attrs.state_abbr}`;
+  updateBreadcrumb({ type: "county", name: `${attrs.county_name}, ${attrs.state_abbr}`, chapter: attrs.chapter, region: attrs.region, division: attrs.division });
+  // Replace KPI grid with county detail
+  const kpiEl = document.getElementById("kpiGrid");
+  kpiEl.hidden = false;
+  document.getElementById("divisionTable").hidden = true;
+  kpiEl.innerHTML = buildCountyDetailHTML(attrs);
+  kpiEl.className = ""; // Remove kpi-grid class for county layout
+  showTab("overview");
 }
 function buildCountyDetailHTML(a) {
   const pop = a.population || 0;
@@ -1019,14 +1035,26 @@ function zoomToFips(fips) {
 }
 
 // ───── KPI ───────────────────────────────────────────────────────────────────
+const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Top Hazard</div><div class="kpi-value" id="kpiHazard">&mdash;</div><div class="kpi-sub" id="kpiHazardVal">&nbsp;</div></div><div class="kpi-card full-width"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub">across scope</div></div>`;
+
 function updateKPIs() {
   if (!countyData) return;
   const rows = countyData.rows || [];
   const isNat = activeScope?.type === "national";
+  const isCounty = activeScope?.type === "county";
+
+  // County scope is handled by showCountyDetail — skip standard KPIs
+  if (isCounty) return;
+
+  // Restore standard KPI HTML if it was replaced by county detail
+  const kpiEl = document.getElementById("kpiGrid");
+  if (!kpiEl.querySelector("#kpiCounties")) {
+    kpiEl.innerHTML = KPI_DEFAULT_HTML;
+    kpiEl.className = "kpi-grid";
+  }
 
   // For national: show division comparison table
   const divEl = document.getElementById("divisionTable");
-  const kpiEl = document.getElementById("kpiGrid");
   if (isNat) {
     kpiEl.hidden = true;
     divEl.hidden = false;
@@ -1079,11 +1107,14 @@ function updateBreadcrumb(scope) {
   const el = document.getElementById("breadcrumb");
   if (!scope || scope.type === "national") { el.innerHTML = ""; return; }
   const crumbs = [`<a data-type="national">National</a>`];
-  if (scope.type === "chapter" || scope.type === "region") {
+  if (["chapter","region","county"].includes(scope.type)) {
     if (scope.division) crumbs.push(`<a data-type="division" data-name="${scope.division}">${scope.division.replace(/ Division$/,"")}</a>`);
   }
-  if (scope.type === "chapter") {
+  if (["chapter","county"].includes(scope.type)) {
     if (scope.region) crumbs.push(`<a data-type="region" data-name="${scope.region}">${scope.region.replace(/ Region$/,"")}</a>`);
+  }
+  if (scope.type === "county") {
+    if (scope.chapter) crumbs.push(`<a data-type="chapter" data-name="${scope.chapter}">${scope.chapter}</a>`);
   }
   crumbs.push(`<span class="current">${scope.name}</span>`);
   el.innerHTML = crumbs.join('<span class="sep-arrow">&#x25B8;</span>');
