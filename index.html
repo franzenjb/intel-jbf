@@ -313,6 +313,9 @@
   .stats-row span { display: flex; align-items: center; gap: 4px; }
   .stats-row .stat-val { color: var(--fg); font-weight: 700; }
 
+  /* ───── Sidebar footer ──────────────────────────────────────────────────── */
+  .sidebar-footer { padding: 10px 20px; border-top: 1px solid var(--border); font: 500 11px/1.4 inherit; color: var(--dim); text-align: center; flex-shrink: 0; letter-spacing: 0.2px; }
+
   /* ───── Help modal ──────────────────────────────────────────────────────── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
   .modal-overlay[hidden] { display: none; }
@@ -403,7 +406,8 @@
       <h3>Getting Started</h3>
       <ul>
         <li><strong>National</strong> shows the full US overview with division comparisons</li>
-        <li>Click <strong>Division</strong>, <strong>Region</strong>, or <strong>Chapter</strong> tabs to drill down</li>
+        <li>Use <strong>State</strong>, <strong>Division</strong>, <strong>Region</strong>, or <strong>Chapter</strong> to drill down</li>
+        <li>Use <strong>County</strong> to search and select any of 3,144 US counties</li>
         <li>Click any county on the map to see its detail card</li>
       </ul>
       <h3>Tabs</h3>
@@ -412,8 +416,14 @@
         <li><strong>Counties</strong> — Map metrics, search counties, top rankings</li>
         <li><strong>Ask</strong> — Ask natural language questions about your area (powered by SQL + Knowledge Graph)</li>
       </ul>
+      <h3>Keyboard Shortcuts</h3>
+      <ul>
+        <li><span class="kbd">/</span> Focus scope search</li>
+        <li><span class="kbd">?</span> Show this help</li>
+        <li><span class="kbd">Esc</span> Close modal</li>
+      </ul>
       <h3>Data Sources</h3>
-      <p>FEMA National Risk Index, CDC Social Vulnerability Index, United Way ALICE, FEMA disaster declarations, Red Cross FLARE fire incidents (CY2024), and Wikipedia county profiles.</p>
+      <p>FEMA National Risk Index, CDC Social Vulnerability Index, United Way ALICE, FEMA disaster declarations, Red Cross FLARE fire incidents (CY2024), and Wikipedia county profiles via Knowledge Graph.</p>
     </div>
   </div>
 
@@ -454,7 +464,7 @@
         <div class="kpi-card full-width">
           <div class="kpi-label">Est. Annual Loss</div>
           <div class="kpi-value" id="kpiEAL">&mdash;</div>
-          <div class="kpi-sub">across scope</div>
+          <div class="kpi-sub" id="kpiEALSub">across scope</div>
         </div>
       </div>
       <div id="divisionTable" hidden></div>
@@ -510,6 +520,7 @@
         <button class="icon-btn" id="openAskBtn" style="background:var(--red);color:#fff;border-color:var(--red);padding:14px 32px;font-size:15px;border-radius:12px;">Open Ask Intel</button>
       </div>
     </div>
+    <div class="sidebar-footer">Data: FEMA NRI · United Way ALICE · CDC SVI · ACS 2023 · FLARE 2024</div>
   </aside>
 
   <main id="mapwrap">
@@ -964,6 +975,8 @@ async function drawScopeOutline(scope) {
 // Geometry cache: FIPS → { geometry, attributes } — survives metric switches
 const geoCache = new Map();
 let geoCacheScopeKey = null;
+// Dynamic range for choropleth — computed from actual data percentiles
+let dynRange = {};
 
 const COUNTY_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Counties_Generalized_Boundaries/FeatureServer/0";
 const BATCH_SIZE = 500;
@@ -1004,11 +1017,21 @@ async function renderChoropleth() {
   }
 
   const meta = METRIC_META[activeMetric];
+  // Compute dynamic range from actual data percentiles for better color spread
+  const dataVals = (countyData.rows || []).map(r => Number(r[activeMetric])).filter(v => !isNaN(v) && v != null).sort((a, b) => a - b);
+  if (dataVals.length >= 5) {
+    dynRange[activeMetric] = { min: dataVals[Math.floor(dataVals.length * 0.02)], max: dataVals[Math.floor(dataVals.length * 0.98)] };
+  } else {
+    dynRange[activeMetric] = { min: meta.min, max: meta.max };
+  }
+  const dr = dynRange[activeMetric];
+  const renderMeta = { ...meta, min: dr.min, max: dr.max };
+
   const outlineColor = currentTheme === "light" ? [30, 30, 30, 0.35] : [255, 255, 255, 0.22];
   for (const [fips, geo] of geoCache) {
     const row = fipsByRow.get(fips); if (!row) continue;
     const v = Number(row[activeMetric]);
-    const color = valueToColor(v, meta, RAMP);
+    const color = valueToColor(v, renderMeta, RAMP);
     const sym = new SimpleFillSymbol({ color, outline: new SimpleLineSymbol({ color: outlineColor, width: 0.5 }) });
     countyLayer.add(new Graphic({ geometry: geo.geometry, symbol: sym, attributes: { ...row, __display_name: `${row.county_name}, ${row.state_abbr}` } }));
   }
@@ -1100,10 +1123,11 @@ async function fetchCountyNarrative(countyName, stateAbbr, fips) {
 // ───── Legend ────────────────────────────────────────────────────────────────
 function renderLegend() {
   const meta = METRIC_META[activeMetric]; const ramp = RAMPS[meta.ramp];
+  const dr = dynRange[activeMetric] || meta;
   document.getElementById("legend").hidden = false;
   document.getElementById("legendTitle").textContent = meta.label;
   document.getElementById("legendBar").innerHTML = ramp.map(c => `<div style="background:${c}"></div>`).join("");
-  document.getElementById("legendLabels").innerHTML = `<span>${meta.fmt(meta.min)}</span><span>${meta.fmt(meta.max)}</span>`;
+  document.getElementById("legendLabels").innerHTML = `<span>${meta.fmt(dr.min)}</span><span>${meta.fmt(dr.max)}</span>`;
 }
 
 // ───── Top Counties ──────────────────────────────────────────────────────────
@@ -1156,7 +1180,7 @@ function zoomToFips(fips) {
 }
 
 // ───── KPI ───────────────────────────────────────────────────────────────────
-const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Top Hazard</div><div class="kpi-value" id="kpiHazard">&mdash;</div><div class="kpi-sub" id="kpiHazardVal">&nbsp;</div></div><div class="kpi-card full-width"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub">across scope</div></div>`;
+const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Top Hazard</div><div class="kpi-value" id="kpiHazard">&mdash;</div><div class="kpi-sub" id="kpiHazardVal">&nbsp;</div></div><div class="kpi-card full-width"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub" id="kpiEALSub">across scope</div></div>`;
 
 function updateKPIs() {
   if (!countyData) return;
@@ -1174,10 +1198,10 @@ function updateKPIs() {
     kpiEl.className = "kpi-grid";
   }
 
-  // For national: show division comparison table
+  // For national: show KPIs AND division comparison table
   const divEl = document.getElementById("divisionTable");
   if (isNat) {
-    kpiEl.hidden = true;
+    kpiEl.hidden = false;
     divEl.hidden = false;
     const divs = new Map();
     for (const r of rows) {
@@ -1191,7 +1215,11 @@ function updateKPIs() {
       d.eal += r.expected_annual_loss || 0;
     }
     const sorted = [...divs.values()].sort((a, b) => b.eal - a.eal);
-    divEl.innerHTML = `<div class="card"><h3><span class="dot"></span>Division Comparison</h3><table class="div-table"><thead><tr><th>Division</th><th class="num">Counties</th><th class="num">Population</th><th class="num">Avg Risk</th><th class="num">Struggling</th><th class="num">Annual Loss</th></tr></thead><tbody>${sorted.map(d => `<tr data-div="${d.name}" data-code="${d.code}"><td class="div-name">${d.name.replace(/ Division$/,"")}</td><td class="num">${d.counties}</td><td class="num">${shortNum(d.pop)}</td><td class="num">${d.riskN ? (d.riskSum/d.riskN).toFixed(0) : "—"}</td><td class="num">${d.strugN ? (d.strugSum/d.strugN).toFixed(1)+"%" : "—"}</td><td class="num">$${shortNum(d.eal)}</td></tr>`).join("")}</tbody></table></div>`;
+    divEl.innerHTML = `<div class="card"><h3><span class="dot"></span>Division Comparison</h3><table class="div-table"><thead><tr><th>Division</th><th class="num">Counties</th><th class="num">Population</th><th class="num">Avg Risk</th><th class="num">Struggling</th><th class="num">Annual Loss</th></tr></thead><tbody>${sorted.map(d => {
+      const strugPct = d.strugN ? (d.strugSum/d.strugN).toFixed(1) : null;
+      const strugPpl = strugPct != null ? Math.round(d.pop * strugPct / 100) : 0;
+      return `<tr data-div="${d.name}" data-code="${d.code}"><td class="div-name">${d.name.replace(/ Division$/,"")}</td><td class="num">${d.counties}</td><td class="num">${shortNum(d.pop)}</td><td class="num">${d.riskN ? (d.riskSum/d.riskN).toFixed(0) : "—"}</td><td class="num">${strugPct ? strugPct+"%" : "—"}<br><span style="font-size:11px;color:var(--muted)">${strugPpl ? fmtNum(strugPpl) : ""}</span></td><td class="num">$${shortNum(d.eal)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
     divEl.querySelectorAll("tr[data-div]").forEach(tr => {
       tr.addEventListener("click", () => {
         setType("division");
@@ -1213,9 +1241,21 @@ function updateKPIs() {
   document.getElementById("kpiRisk").textContent = riskAvg != null ? riskAvg.toFixed(0) : "—";
   document.getElementById("kpiStruggling").textContent = struggAvg != null ? struggAvg.toFixed(1) + "%" : "—";
   document.getElementById("kpiEAL").textContent = "$" + shortNum(ealSum);
+  // Per-capita EAL
+  const ealSubEl = document.getElementById("kpiEALSub");
+  if (ealSubEl && popTotal > 0) { ealSubEl.textContent = `$${fmtNum(Math.round(ealSum / popTotal))} per capita · ${fmtNum(popTotal)} people`; }
+  // Struggling: always show absolute people count
   const nat = countyData.national || {};
+  const struggPeople = rows.reduce((s, r) => s + (r.pct_struggling != null && r.population ? Math.round(r.population * r.pct_struggling / 100) : 0), 0);
+  const strugSub = document.getElementById("kpiStrugglingPctl");
+  if (!isNat && struggAvg != null && nat.p50_struggling != null) {
+    const d = struggAvg - nat.p50_struggling;
+    strugSub.textContent = `${fmtNum(struggPeople)} people · ${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs median`;
+  } else {
+    strugSub.textContent = `${fmtNum(struggPeople)} people`;
+  }
+  // Risk: keep vs median comparison
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
-  if (!isNat && struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
   // Top hazard = which hazard is #1 for the most people in this scope
   // For each county, find its dominant hazard, then see which hazard dominates the most population
   const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
@@ -1244,7 +1284,11 @@ function updateBreadcrumb(scope) {
   const el = document.getElementById("breadcrumb");
   if (!scope || scope.type === "national") { el.innerHTML = ""; return; }
   const crumbs = [`<a data-type="national">National</a>`];
-  if (["chapter","region","county"].includes(scope.type)) {
+  if (scope.type === "state") {
+    // State: just National ▸ State Name
+  } else if (["division"].includes(scope.type)) {
+    // Division: just National ▸ Division Name
+  } else if (["chapter","region","county"].includes(scope.type)) {
     if (scope.division) crumbs.push(`<a data-type="division" data-name="${scope.division}">${scope.division.replace(/ Division$/,"")}</a>`);
   }
   if (["chapter","county"].includes(scope.type)) {
@@ -1386,6 +1430,12 @@ document.getElementById("railToggle").addEventListener("click", () => {
   app.classList.toggle("rail-collapsed");
   btn.innerHTML = app.classList.contains("rail-collapsed") ? "&#x25B6;" : "&#x25C0;";
   setTimeout(() => { if (mapView) mapView.resize(); }, 300);
+});
+// Keyboard shortcuts
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input,textarea")) return;
+  if (e.key === "/" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); const inp = document.getElementById("scopeNameInput"); if (inp && !inp.closest("[hidden]")) inp.focus(); }
+  if (e.key === "?" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); document.getElementById("helpModal").hidden = false; }
 });
 </script>
 </body>
