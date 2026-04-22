@@ -71,15 +71,17 @@ async function loadHierarchy() {
     dedupeChapters.push(c);
   }
 
-  // States
+  // States — use ArcGIS county data to get full state names
   const stateRows = await sql(`
-    SELECT DISTINCT state_abbr
+    SELECT state_abbr, COUNT(*) AS counties
     FROM county_rankings
     WHERE state_abbr IS NOT NULL
+    GROUP BY state_abbr
     ORDER BY state_abbr
   `);
+  const STATE_NAMES = {AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",DC:"District of Columbia",PR:"Puerto Rico",VI:"Virgin Islands",GU:"Guam",AS:"American Samoa",MP:"Northern Mariana Islands"};
   const states = stateRows.map(r => ({
-    name: r.state_abbr,
+    name: STATE_NAMES[r.state_abbr] || r.state_abbr,
     code: r.state_abbr,
   }));
 

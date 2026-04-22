@@ -698,7 +698,7 @@ async function bootstrap() {
 
 // ───── Scope API ─────────────────────────────────────────────────────────────
 async function loadScopes() {
-  const r = await fetch("/api/scopes");
+  const r = await fetch("/api/scopes", { cache: "no-cache" });
   if (!r.ok) throw new Error("Failed to load scopes");
   scopes = await r.json();
 }
