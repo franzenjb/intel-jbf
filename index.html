@@ -681,6 +681,7 @@ function ensureComputedFields(rows) {
 let scopes = null, scopeList = [], activeScope = null, activeMetric = "risk_score";
 let countyData = null, activeComboIdx = -1, chatHistory = [];
 let mapView, countyLayer, outlineLayer, arcgisMods = null;
+let renderGeneration = 0; // Incremented on each activateScope to cancel stale choropleth renders
 
 // ───── Tabs ──────────────────────────────────────────────────────────────────
 function showTab(name) {
@@ -867,6 +868,7 @@ function loadArcGIS() {
 // ───── Scope activation ──────────────────────────────────────────────────────
 function showDimmer(on) { document.getElementById("dimmer").classList.toggle("on", on); }
 async function activateScope(scope) {
+  renderGeneration++;
   activeScope = scope;
   document.getElementById("app").classList.add("has-scope");
   document.getElementById("scopeBadge").textContent = scope.type.toUpperCase();
@@ -996,12 +998,14 @@ async function fetchGeometries(fipsList) {
 
 async function renderChoropleth() {
   if (!countyData || !arcgisMods) return;
+  const gen = renderGeneration; // Capture so we can detect stale renders
   ensureComputedFields(countyData.rows);
   const { Graphic, SimpleFillSymbol, SimpleLineSymbol } = arcgisMods;
   countyLayer.removeAll();
+  const rows = countyData.rows || [];
   const fipsByRow = new Map();
-  for (const r of countyData.rows || []) { if (r.county_fips) fipsByRow.set(String(r.county_fips).padStart(5, "0"), r); }
-  if (!fipsByRow.size) return;
+  for (const r of rows) { if (r.county_fips) fipsByRow.set(String(r.county_fips).padStart(5, "0"), r); }
+  if (!fipsByRow.size) { console.warn("choropleth: no FIPS in", rows.length, "rows for", activeScope?.type, activeScope?.name); return; }
 
   // Cache key: use scope identity so we re-fetch when scope changes, not on metric switch
   const scopeKey = `${activeScope?.type}|${activeScope?.code || activeScope?.name}`;
@@ -1010,16 +1014,21 @@ async function renderChoropleth() {
     geoCache.clear();
     geoCacheScopeKey = scopeKey;
     const features = await fetchGeometries([...fipsByRow.keys()]);
+    // Bail if scope changed during async fetch
+    if (gen !== renderGeneration) return;
     for (const f of features) {
       const fips = String(f.attributes.FIPS).padStart(5, "0");
       geoCache.set(fips, { geometry: f.geometry, arcAttrs: f.attributes });
     }
   }
 
+  // Bail if scope changed during async fetch
+  if (gen !== renderGeneration) return;
+
   const meta = METRIC_META[activeMetric];
   // Compute dynamic range — quantile breaks for absolute counts, percentile range for rates/scores
   const QUANTILE_METRICS = new Set(["alice_total","poverty_total","struggling_total","expected_annual_loss"]);
-  const dataVals = (countyData.rows || []).map(r => r[activeMetric]).filter(v => v != null && !isNaN(Number(v))).map(Number).sort((a, b) => a - b);
+  const dataVals = rows.map(r => r[activeMetric]).filter(v => v != null && !isNaN(Number(v))).map(Number).sort((a, b) => a - b);
   if (QUANTILE_METRICS.has(activeMetric) && dataVals.length >= 7) {
     // Quantile breaks: each of 7 colors gets equal share of counties
     const breaks = [];
@@ -1034,6 +1043,7 @@ async function renderChoropleth() {
   const renderMeta = { ...meta, min: dr.min, max: dr.max };
   if (dr.quantile) renderMeta.quantileBreaks = dr.breaks;
 
+  countyLayer.removeAll(); // Clear again in case a stale render added graphics
   const outlineColor = currentTheme === "light" ? [30, 30, 30, 0.35] : [255, 255, 255, 0.22];
   for (const [fips, geo] of geoCache) {
     const row = fipsByRow.get(fips); if (!row) continue;
