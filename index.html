@@ -173,10 +173,13 @@
   @keyframes sh { to { background-position: -200% 0; } }
 
   /* ───── Metric selector (inside Counties tab) ───────────────────────────── */
-  .metric-selector { display: flex; flex-wrap: wrap; gap: 6px; }
+  .metric-selector { display: flex; flex-direction: column; gap: 10px; }
+  .metric-group { display: flex; flex-direction: column; gap: 5px; }
+  .metric-group-label { font: 700 10px/1 inherit; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; padding-left: 2px; }
+  .metric-group-chips { display: flex; flex-wrap: wrap; gap: 5px; }
   .map-chip {
     background: var(--panel); border: 1px solid var(--border); color: var(--fg2);
-    padding: 9px 16px; border-radius: 8px; font: 600 12px/1 inherit;
+    padding: 7px 12px; border-radius: 7px; font: 600 11px/1 inherit;
     letter-spacing: 0.2px; text-transform: uppercase; cursor: pointer;
     transition: all .15s; box-shadow: var(--shadow);
   }
@@ -461,19 +464,34 @@
     <div class="tab-panel" data-panel="counties" hidden>
       <input type="text" class="county-search" id="countySearch" placeholder="Search counties..." />
       <div class="metric-selector" id="metricChips">
-        <button class="map-chip active" data-metric="risk_score">Overall Risk</button>
-        <button class="map-chip" data-metric="pct_struggling">Combined (%)</button>
-        <button class="map-chip" data-metric="pct_alice">ALICE (%)</button>
-        <button class="map-chip" data-metric="poverty_pct">Poverty (%)</button>
-        <button class="map-chip" data-metric="struggling_total">Combined (#)</button>
-        <button class="map-chip" data-metric="alice_total">ALICE (#)</button>
-        <button class="map-chip" data-metric="poverty_total">Poverty (#)</button>
-        <button class="map-chip" data-metric="hurricane_risk">Hurricane</button>
-        <button class="map-chip" data-metric="flood_risk">Flood</button>
-        <button class="map-chip" data-metric="wildfire_risk">Wildfire</button>
-        <button class="map-chip" data-metric="tornado_risk">Tornado</button>
-        <button class="map-chip" data-metric="heat_wave_risk">Heat Wave</button>
-        <button class="map-chip" data-metric="expected_annual_loss">Annual Loss ($)</button>
+        <div class="metric-group">
+          <div class="metric-group-label">Risk & Hardship</div>
+          <div class="metric-group-chips">
+            <button class="map-chip active" data-metric="risk_score">Overall Risk</button>
+            <button class="map-chip" data-metric="pct_struggling">Combined %</button>
+            <button class="map-chip" data-metric="struggling_total">Combined #</button>
+            <button class="map-chip" data-metric="pct_alice">ALICE %</button>
+            <button class="map-chip" data-metric="alice_total">ALICE #</button>
+            <button class="map-chip" data-metric="poverty_pct">Poverty %</button>
+            <button class="map-chip" data-metric="poverty_total">Poverty #</button>
+          </div>
+        </div>
+        <div class="metric-group">
+          <div class="metric-group-label">Natural Hazards</div>
+          <div class="metric-group-chips">
+            <button class="map-chip" data-metric="hurricane_risk">Hurricane</button>
+            <button class="map-chip" data-metric="flood_risk">Flood</button>
+            <button class="map-chip" data-metric="wildfire_risk">Wildfire</button>
+            <button class="map-chip" data-metric="tornado_risk">Tornado</button>
+            <button class="map-chip" data-metric="heat_wave_risk">Heat Wave</button>
+          </div>
+        </div>
+        <div class="metric-group">
+          <div class="metric-group-label">Financial</div>
+          <div class="metric-group-chips">
+            <button class="map-chip" data-metric="expected_annual_loss">Annual Loss ($)</button>
+          </div>
+        </div>
       </div>
       <div class="stats-row" id="statsRow"></div>
       <div class="card" id="top5Section" hidden>
