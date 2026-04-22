@@ -1223,11 +1223,12 @@ function updateBreadcrumb(scope) {
 
 // ───── Dynamic suggestions ──────────────────────────────────────────────────
 const SUGGESTIONS = {
-  national: ["Compare divisions by risk", "Which division has the worst fire service gaps?", "Where is ALICE highest nationally?", "What are the top 10 riskiest counties in the US?"],
-  state: ["What are the riskiest counties in this state?", "How does this state compare nationally?", "What is the ALICE situation here?", "What are the biggest natural hazards?"],
-  division: ["What are the biggest risks here?", "Which regions need the most resources?", "How does this division compare nationally?", "What are the fire service gaps?"],
-  region: ["What should we prepare for?", "Which chapters have the highest risk?", "How does this compare to the division?", "What's the ALICE situation here?"],
-  chapter: ["What should we prepare for?", "What are the biggest risks?", "What's our fire response coverage?", "Tell me about the most vulnerable county"],
+  national: ["Compare divisions by risk score", "Which division has the worst fire service gaps?", "What are the top 10 ALICE counties by population?", "What are the top 10 riskiest counties in the US?"],
+  state: ["What are the top 5 riskiest counties in this state?", "How does this state compare to the national median?", "What is the ALICE rate and poverty rate here?", "What are the top natural hazards in this state?"],
+  division: ["What are the top 5 riskiest counties in this division?", "Which regions have the highest ALICE rates?", "How does this division compare to the national median?", "How many fire incidents had no Red Cross notification?"],
+  region: ["What are the top 5 riskiest counties in this region?", "Which chapters have the highest risk scores?", "What is the average ALICE rate in this region?", "What are the top hazards here?"],
+  chapter: ["What are the top hazards in this chapter?", "What is the ALICE rate across our counties?", "Which county has the highest risk score?", "How many fire incidents had no Red Cross notification?"],
+  county: ["What are the top hazards in this county?", "How does this county compare to the national median?", "What is the ALICE and poverty rate here?", "Tell me about this county's geography and economy"],
 };
 function updateSuggestions(scope) {
   const el = document.getElementById("suggestions");
