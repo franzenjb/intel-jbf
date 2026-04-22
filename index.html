@@ -269,6 +269,46 @@
   .kpi-sm .kpi-sub { font-size: 11px; margin-top: 3px; }
   .kpi-sm .kpi-unit { font-size: 12px; }
 
+  /* ───── Breadcrumb ──────────────────────────────────────────────────────── */
+  .breadcrumb { display: flex; align-items: center; gap: 6px; padding: 0 20px 10px; flex-shrink: 0; }
+  .breadcrumb a { color: var(--accent); font: 600 12px/1 inherit; text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep-arrow { color: var(--dim); font-size: 11px; }
+  .breadcrumb .current { color: var(--fg2); font: 600 12px/1 inherit; }
+
+  /* ───── Division summary table ─────────────────────────────────────────── */
+  .div-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .div-table th { text-align: left; padding: 10px 12px; font: 700 11px/1 inherit; text-transform: uppercase; letter-spacing: 0.4px; color: var(--fg2); border-bottom: 2px solid var(--border); }
+  .div-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg); }
+  .div-table tr { cursor: pointer; transition: background .1s; }
+  .div-table tbody tr:hover { background: var(--red-dim); }
+  .div-table .div-name { font-weight: 700; color: var(--fg); }
+  .div-table .num { font: 600 13px/1 ui-monospace,"SF Mono",Menlo,monospace; text-align: right; }
+
+  /* ───── County search ──────────────────────────────────────────────────── */
+  .county-search { background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; font: inherit; font-size: 14px; width: 100%; transition: border-color .15s, box-shadow .15s; }
+  .county-search:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+
+  /* ───── Summary stats row ──────────────────────────────────────────────── */
+  .stats-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .stats-row span { display: flex; align-items: center; gap: 4px; }
+  .stats-row .stat-val { color: var(--fg); font-weight: 700; }
+
+  /* ───── Help modal ──────────────────────────────────────────────────────── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
+  .modal-overlay[hidden] { display: none; }
+  .modal { background: var(--panel); border-radius: 16px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal h2 { font: 800 20px/1.2 inherit; color: var(--fg); margin-bottom: 16px; }
+  .modal h3 { font: 700 14px/1.2 inherit; color: var(--fg); margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .modal p { font-size: 14px; line-height: 1.7; color: var(--fg2); margin-bottom: 8px; }
+  .modal .close-modal { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; }
+  .modal ul { font-size: 14px; line-height: 1.7; color: var(--fg2); padding-left: 20px; margin-bottom: 8px; }
+  .modal .kbd { display: inline-block; background: var(--panel2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font: 600 12px/1.4 ui-monospace,monospace; color: var(--fg2); }
+
+  /* ───── Refresh button ──────────────────────────────────────────────────── */
+  .refresh-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px; transition: color .15s; margin-left: auto; }
+  .refresh-btn:hover { color: var(--red); }
+
   #gate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 
   /* ───── Print ────────────────────────────────────────────────────────────── */
@@ -278,7 +318,7 @@
     header#top { position: relative; background: #fff; border-bottom: 2px solid #ccc; }
     .brand .pulse { display: none; }
     .brand .rc { color: #c00; }
-    #printBtn, #logout, #themeBtn, #basemapBtn, .basemap-panel, .map-controls { display: none !important; }
+    #printBtn, #themeBtn, #helpBtn, #basemapBtn, .basemap-panel, .map-controls, .modal-overlay { display: none !important; }
     aside#rail { border: 0; overflow: visible; background: #fff; }
     .tab-bar { display: none; }
     .tab-panel { display: block !important; overflow: visible; }
@@ -328,15 +368,40 @@
       </div>
     </div>
     <div class="sep"></div>
+    <button class="icon-btn" id="themeBtn" title="Toggle light/dark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeIcon" style="vertical-align:middle;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+    <button class="icon-btn" id="helpBtn" title="Help">?</button>
     <button class="icon-btn" id="printBtn" title="Print / Save PDF">Print</button>
-    <button class="icon-btn" id="logout">Sign out</button>
   </header>
+  <div class="modal-overlay" id="helpModal" hidden>
+    <div class="modal" style="position:relative;">
+      <button class="close-modal" id="helpClose">&times;</button>
+      <h2>Red Cross Intel</h2>
+      <p>An intelligence briefing platform for American Red Cross leadership. Powered by a knowledge graph of 111,000+ entities covering every US county.</p>
+      <h3>Getting Started</h3>
+      <ul>
+        <li><strong>National</strong> shows the full US overview with division comparisons</li>
+        <li>Click <strong>Division</strong>, <strong>Region</strong>, or <strong>Chapter</strong> tabs to drill down</li>
+        <li>Click any county on the map to see its detail card</li>
+      </ul>
+      <h3>Tabs</h3>
+      <ul>
+        <li><strong>Overview</strong> — KPI summary + executive briefing</li>
+        <li><strong>Counties</strong> — Map metrics, search counties, top rankings</li>
+        <li><strong>Ask</strong> — Ask natural language questions about your area (powered by SQL + Knowledge Graph)</li>
+      </ul>
+      <h3>Data Sources</h3>
+      <p>FEMA National Risk Index, CDC Social Vulnerability Index, United Way ALICE, FEMA disaster declarations, Red Cross FLARE fire incidents (CY2024), and Wikipedia county profiles.</p>
+    </div>
+  </div>
 
   <aside id="rail">
     <div class="scope-header" id="scopeHeader">
       <span class="scope-badge" id="scopeBadge"></span>
       <h2 class="scope-name-display" id="scopeNameDisplay"></h2>
     </div>
+    <div class="breadcrumb" id="breadcrumb"></div>
     <div class="tab-bar" id="tabBar">
       <button class="tab active" data-tab="overview">Overview</button>
       <button class="tab" data-tab="counties">Counties</button>
@@ -345,7 +410,7 @@
     </div>
 
     <div class="tab-panel" data-panel="overview" hidden>
-      <div class="kpi-grid">
+      <div class="kpi-grid" id="kpiGrid">
         <div class="kpi-card">
           <div class="kpi-label">Households Struggling</div>
           <div class="kpi-value" id="kpiStruggling">&mdash;</div>
@@ -372,39 +437,39 @@
           <div class="kpi-sub">across scope</div>
         </div>
       </div>
+      <div id="divisionTable" hidden></div>
       <div class="card" id="briefingSection" hidden>
-        <h3><span class="dot"></span>Executive Briefing</h3>
+        <h3><span class="dot"></span>Executive Briefing <button class="refresh-btn" id="refreshBriefing" title="Regenerate briefing">&#x21bb;</button></h3>
         <div id="briefing" class="loading">Synthesizing&hellip;<div class="shimmer"></div></div>
       </div>
     </div>
 
     <div class="tab-panel" data-panel="counties" hidden>
+      <input type="text" class="county-search" id="countySearch" placeholder="Search counties..." />
       <div class="metric-selector" id="metricChips">
         <button class="map-chip active" data-metric="risk_score">Overall Risk</button>
         <button class="map-chip" data-metric="pct_struggling">Combined Hardship</button>
-        <button class="map-chip" data-metric="pct_alice">ALICE</button>
-        <button class="map-chip" data-metric="poverty_pct">Poverty</button>
+        <button class="map-chip" data-metric="pct_alice">ALICE (%)</button>
+        <button class="map-chip" data-metric="poverty_pct">Poverty (%)</button>
         <button class="map-chip" data-metric="hurricane_risk">Hurricane</button>
         <button class="map-chip" data-metric="flood_risk">Flood</button>
         <button class="map-chip" data-metric="wildfire_risk">Wildfire</button>
         <button class="map-chip" data-metric="tornado_risk">Tornado</button>
         <button class="map-chip" data-metric="heat_wave_risk">Heat Wave</button>
-        <button class="map-chip" data-metric="expected_annual_loss">Annual Loss</button>
+        <button class="map-chip" data-metric="expected_annual_loss">Annual Loss ($)</button>
       </div>
+      <div class="stats-row" id="statsRow"></div>
       <div class="card" id="top5Section" hidden>
-        <h3><span class="dot"></span>Top 5 Counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span></h3>
+        <h3><span class="dot"></span>Top Counties <span style="margin-left:auto;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;" id="top5MetricLabel">by risk score</span></h3>
         <div id="top5"></div>
+        <button class="icon-btn" id="showAllBtn" style="margin-top:10px;width:100%;text-align:center;" hidden>Show all</button>
       </div>
     </div>
 
     <div class="tab-panel" data-panel="ask" hidden>
       <div class="card chat-card" id="chatSection" hidden>
-        <h3><span class="dot"></span>Ask a Question</h3>
-        <div class="suggestions" id="suggestions">
-          <button class="suggestion">What are the biggest risks here?</button>
-          <button class="suggestion">How does this compare nationally?</button>
-          <button class="suggestion">What should we prepare for?</button>
-        </div>
+        <h3><span class="dot"></span>Ask Intel</h3>
+        <div class="suggestions" id="suggestions"></div>
         <div id="messages"></div>
         <form id="askForm">
           <textarea id="q" placeholder="Ask about this area…" rows="1"></textarea>
@@ -429,9 +494,6 @@
       <button class="ctrl-btn" id="basemapBtn" title="Basemap" aria-label="Basemap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 2,7 12,12 22,7"></polygon><polyline points="2,17 12,22 22,17"></polyline><polyline points="2,12 12,17 22,12"></polyline></svg>
       </button>
-      <button class="ctrl-btn" id="themeBtn" title="Toggle light/dark" aria-label="Toggle light/dark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-      </button>
     </div>
     <div class="basemap-panel" id="basemapPanel" hidden>
       <h4>Basemap</h4>
@@ -443,9 +505,11 @@
 
 <script>
 // ───── One-time theme migration (v2 redesign → light default) ────────────────
-if (localStorage.getItem("intel:ui_version") !== "2") {
+if (localStorage.getItem("intel:ui_version") !== "3") {
   localStorage.removeItem("intel:theme");
-  localStorage.setItem("intel:ui_version", "2");
+  // Clear stale briefing caches from previous versions
+  Object.keys(localStorage).filter(k => k.startsWith("intel:brief:")).forEach(k => localStorage.removeItem(k));
+  localStorage.setItem("intel:ui_version", "3");
 }
 
 // ───── Gate: ensure authed ───────────────────────────────────────────────────
@@ -567,9 +631,11 @@ async function bootstrap() {
   initScopeUI();
   initMetricChips();
   initChat();
-  initLogout();
-  initSuggestions();
   initTabs();
+  initCountySearch();
+  initShowAll();
+  initRefreshBriefing();
+  initHelp();
   await initMap();
   initMapControls();
   // Default to national view
@@ -637,7 +703,7 @@ function initMetricChips() {
     chip.addEventListener("click", () => {
       document.querySelectorAll(".map-chip").forEach(c => c.classList.toggle("active", c === chip));
       activeMetric = chip.dataset.metric;
-      renderChoropleth(); renderTop5(); renderLegend(); updateKPIs();
+      renderChoropleth(); renderTopCounties(); renderLegend(); updateKPIs();
     });
   });
 }
@@ -704,22 +770,27 @@ async function activateScope(scope) {
   document.getElementById("app").classList.add("has-scope");
   document.getElementById("scopeBadge").textContent = scope.type.toUpperCase();
   document.getElementById("scopeNameDisplay").textContent = scope.name;
+  updateBreadcrumb(scope);
   document.getElementById("briefingSection").hidden = false;
   document.getElementById("top5Section").hidden = false;
   document.getElementById("chatSection").hidden = false;
   showTab("overview");
-  showDimmer(true);
+
+  // Fetch data + briefing + zoom in parallel — don't wait for choropleth
   const [, data, didZoom] = await Promise.all([renderBriefing(scope), fetchCountyData(scope), drawScopeOutline(scope)]);
   countyData = data;
-  await renderChoropleth();
-  // Fallback: zoom to county polygons if scope outline query missed
-  if (!didZoom && countyLayer && countyLayer.graphics.length > 0) {
-    let ext = null;
-    countyLayer.graphics.forEach(g => { if (g.geometry?.extent) ext = ext ? ext.union(g.geometry.extent) : g.geometry.extent.clone(); });
-    if (ext) mapView.goTo(ext.expand(1.3), { duration: 900 });
-  }
-  renderTop5(); renderLegend(); updateKPIs(); loadChat(scope);
-  showDimmer(false);
+
+  // Sidebar is ready — show KPIs, top counties, chat immediately
+  renderTopCounties(); renderLegend(); updateKPIs(); loadChat(scope); updateSuggestions(scope);
+
+  // Choropleth loads in background — doesn't block the sidebar
+  renderChoropleth().then(() => {
+    if (!didZoom && countyLayer && countyLayer.graphics.length > 0) {
+      let ext = null;
+      countyLayer.graphics.forEach(g => { if (g.geometry?.extent) ext = ext ? ext.union(g.geometry.extent) : g.geometry.extent.clone(); });
+      if (ext) mapView.goTo(ext.expand(1.3), { duration: 900 });
+    }
+  });
 }
 async function fetchCountyData(scope) {
   const u = new URLSearchParams({ type: scope.type, name: scope.name, code: scope.code || "" });
@@ -871,15 +942,38 @@ function renderLegend() {
   document.getElementById("legendLabels").innerHTML = `<span>${meta.fmt(meta.min)}</span><span>${meta.fmt(meta.max)}</span>`;
 }
 
-// ───── Top 5 ─────────────────────────────────────────────────────────────────
-function renderTop5() {
+// ───── Top Counties ──────────────────────────────────────────────────────────
+let showAllCounties = false;
+function renderTopCounties() {
   if (!countyData) return;
   const meta = METRIC_META[activeMetric];
   document.getElementById("top5MetricLabel").textContent = `by ${meta.label.toLowerCase()}`;
-  const rows = [...(countyData.rows || [])].filter(r => r[activeMetric] != null).sort((a, b) => b[activeMetric] - a[activeMetric]).slice(0, 5);
+  const searchQ = (document.getElementById("countySearch")?.value || "").trim().toLowerCase();
+  let allRows = [...(countyData.rows || [])].filter(r => r[activeMetric] != null);
+  if (searchQ) allRows = allRows.filter(r => (r.county_name || "").toLowerCase().includes(searchQ) || (r.state_abbr || "").toLowerCase().includes(searchQ));
+  allRows.sort((a, b) => b[activeMetric] - a[activeMetric]);
+
+  // Stats row
+  const vals = allRows.map(r => Number(r[activeMetric])).filter(v => !isNaN(v));
+  const statsEl = document.getElementById("statsRow");
+  if (vals.length) {
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const sorted = [...vals].sort((a,b) => a-b);
+    const med = sorted[Math.floor(sorted.length/2)];
+    statsEl.innerHTML = `<span>Min: <span class="stat-val">${meta.fmt(mn)}</span></span><span>Median: <span class="stat-val">${meta.fmt(med)}</span></span><span>Max: <span class="stat-val">${meta.fmt(mx)}</span></span><span><span class="stat-val">${vals.length}</span> counties</span>`;
+  } else { statsEl.innerHTML = ""; }
+
+  const limit = showAllCounties || searchQ ? allRows.length : 10;
+  const rows = allRows.slice(0, limit);
   const host = document.getElementById("top5");
   host.innerHTML = rows.map((r, i) => `<div class="top5-row" data-fips="${r.county_fips}"><div class="top5-rank">${i+1}</div><div class="top5-name">${r.county_name} <span class="state">${r.state_abbr}</span></div><div class="top5-val">${meta.fmt(r[activeMetric])}</div></div>`).join("");
   host.querySelectorAll(".top5-row").forEach(row => { row.addEventListener("click", () => zoomToFips(row.dataset.fips)); });
+
+  const showAllBtn = document.getElementById("showAllBtn");
+  if (allRows.length > 10 && !searchQ) {
+    showAllBtn.hidden = false;
+    showAllBtn.textContent = showAllCounties ? `Show top 10` : `Show all ${allRows.length} counties`;
+  } else { showAllBtn.hidden = true; }
 }
 function zoomToFips(fips) {
   if (!countyLayer) return;
@@ -893,6 +987,39 @@ function zoomToFips(fips) {
 function updateKPIs() {
   if (!countyData) return;
   const rows = countyData.rows || [];
+  const isNat = activeScope?.type === "national";
+
+  // For national: show division comparison table
+  const divEl = document.getElementById("divisionTable");
+  const kpiEl = document.getElementById("kpiGrid");
+  if (isNat) {
+    kpiEl.hidden = true;
+    divEl.hidden = false;
+    const divs = new Map();
+    for (const r of rows) {
+      if (!r.division || r.division === "Not Assigned") continue;
+      if (!divs.has(r.division)) divs.set(r.division, { name: r.division, code: r.division_code, counties: 0, pop: 0, riskSum: 0, riskN: 0, strugSum: 0, strugN: 0, eal: 0 });
+      const d = divs.get(r.division);
+      d.counties++;
+      d.pop += r.population || 0;
+      if (r.risk_score != null) { d.riskSum += r.risk_score; d.riskN++; }
+      if (r.pct_struggling != null) { d.strugSum += r.pct_struggling; d.strugN++; }
+      d.eal += r.expected_annual_loss || 0;
+    }
+    const sorted = [...divs.values()].sort((a, b) => b.eal - a.eal);
+    divEl.innerHTML = `<div class="card"><h3><span class="dot"></span>Division Comparison</h3><table class="div-table"><thead><tr><th>Division</th><th class="num">Counties</th><th class="num">Population</th><th class="num">Avg Risk</th><th class="num">Struggling</th><th class="num">Annual Loss</th></tr></thead><tbody>${sorted.map(d => `<tr data-div="${d.name}" data-code="${d.code}"><td class="div-name">${d.name.replace(/ Division$/,"")}</td><td class="num">${d.counties}</td><td class="num">${shortNum(d.pop)}</td><td class="num">${d.riskN ? (d.riskSum/d.riskN).toFixed(0) : "—"}</td><td class="num">${d.strugN ? (d.strugSum/d.strugN).toFixed(1)+"%" : "—"}</td><td class="num">$${shortNum(d.eal)}</td></tr>`).join("")}</tbody></table></div>`;
+    divEl.querySelectorAll("tr[data-div]").forEach(tr => {
+      tr.addEventListener("click", () => {
+        setType("division");
+        const s = scopeList.find(s => s.name === tr.dataset.div);
+        if (s) { document.getElementById("scopeNameInput").value = s.name; activateScope({ type: "division", name: s.name, code: s.code }); }
+      });
+    });
+  } else {
+    kpiEl.hidden = false;
+    divEl.hidden = true;
+  }
+
   const popTotal = rows.reduce((s, r) => s + (r.population || 0), 0);
   const riskAvg = avg(rows.map(r => r.risk_score));
   const struggAvg = avg(rows.map(r => r.pct_struggling));
@@ -903,14 +1030,56 @@ function updateKPIs() {
   document.getElementById("kpiStruggling").textContent = struggAvg != null ? struggAvg.toFixed(1) + "%" : "—";
   document.getElementById("kpiEAL").textContent = "$" + shortNum(ealSum);
   const nat = countyData.national || {};
-  if (riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
-  if (struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
+  if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
+  if (!isNat && struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
   const hazAvgs = HAZARD_KEYS.map(k => ({ k, v: avg(rows.map(r => r[k])) })).filter(x => x.v != null);
   hazAvgs.sort((a, b) => b.v - a.v);
   const top = hazAvgs[0];
   if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `avg ${top.v.toFixed(0)}/100`; }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
+
+// ───── Breadcrumb ───────────────────────────────────────────────────────────
+function updateBreadcrumb(scope) {
+  const el = document.getElementById("breadcrumb");
+  if (!scope || scope.type === "national") { el.innerHTML = ""; return; }
+  const crumbs = [`<a data-type="national">National</a>`];
+  if (scope.type === "chapter" || scope.type === "region") {
+    if (scope.division) crumbs.push(`<a data-type="division" data-name="${scope.division}">${scope.division.replace(/ Division$/,"")}</a>`);
+  }
+  if (scope.type === "chapter") {
+    if (scope.region) crumbs.push(`<a data-type="region" data-name="${scope.region}">${scope.region.replace(/ Region$/,"")}</a>`);
+  }
+  crumbs.push(`<span class="current">${scope.name}</span>`);
+  el.innerHTML = crumbs.join('<span class="sep-arrow">&#x25B8;</span>');
+  el.querySelectorAll("a").forEach(a => {
+    a.addEventListener("click", () => {
+      const t = a.dataset.type;
+      if (t === "national") { setType("national"); return; }
+      setType(t);
+      const name = a.dataset.name;
+      const s = scopeList.find(s => s.name === name);
+      if (s) { document.getElementById("scopeNameInput").value = s.name; activateScope({ type: t, name: s.name, code: s.code, region: s.region, division: s.division }); }
+    });
+  });
+}
+
+// ───── Dynamic suggestions ──────────────────────────────────────────────────
+const SUGGESTIONS = {
+  national: ["Compare divisions by risk", "Which division has the worst fire service gaps?", "Where is ALICE highest nationally?", "What are the top 10 riskiest counties in the US?"],
+  division: ["What are the biggest risks here?", "Which regions need the most resources?", "How does this division compare nationally?", "What are the fire service gaps?"],
+  region: ["What should we prepare for?", "Which chapters have the highest risk?", "How does this compare to the division?", "What's the ALICE situation here?"],
+  chapter: ["What should we prepare for?", "What are the biggest risks?", "What's our fire response coverage?", "Tell me about the most vulnerable county"],
+};
+function updateSuggestions(scope) {
+  const el = document.getElementById("suggestions");
+  const items = SUGGESTIONS[scope?.type] || SUGGESTIONS.chapter;
+  el.innerHTML = items.map(s => `<button class="suggestion">${s}</button>`).join("");
+  el.querySelectorAll(".suggestion").forEach(btn => {
+    btn.addEventListener("click", () => { document.getElementById("q").value = btn.textContent; document.getElementById("askForm").requestSubmit(); });
+  });
+  el.hidden = chatHistory.length > 0;
+}
 
 // ───── Chat ──────────────────────────────────────────────────────────────────
 function chatKey(scope) { return `intel:chat:v3:${scope.type}:${scope.code || scope.name}`; }
@@ -939,13 +1108,40 @@ function initChat() {
     saveChat(activeScope); renderChat(); btn.disabled = false;
   });
 }
-function initSuggestions() { document.querySelectorAll('.suggestion').forEach(btn => { btn.addEventListener('click', () => { document.getElementById('q').value = btn.textContent; document.getElementById('askForm').requestSubmit(); }); }); }
 
-// ───── Accordion compat (now no-ops — replaced by tabs) ─────────────────────
-function collapseAccordions() {}
-function expandAccordions() { document.querySelectorAll(".tab-panel").forEach(p => { p.hidden = false; p.style.display = "block"; }); }
+// ───── County search ────────────────────────────────────────────────────────
+function initCountySearch() {
+  const input = document.getElementById("countySearch");
+  input.addEventListener("input", () => renderTopCounties());
+}
+
+// ───── Show all toggle ──────────────────────────────────────────────────────
+function initShowAll() {
+  document.getElementById("showAllBtn").addEventListener("click", () => {
+    showAllCounties = !showAllCounties;
+    renderTopCounties();
+  });
+}
+
+// ───── Refresh briefing ─────────────────────────────────────────────────────
+function initRefreshBriefing() {
+  document.getElementById("refreshBriefing").addEventListener("click", () => {
+    if (!activeScope) return;
+    const key = `intel:brief:v4:${activeScope.type}:${activeScope.code || activeScope.name}`;
+    localStorage.removeItem(key);
+    renderBriefing(activeScope);
+  });
+}
+
+// ───── Help modal ───────────────────────────────────────────────────────────
+function initHelp() {
+  document.getElementById("helpBtn").addEventListener("click", () => { document.getElementById("helpModal").hidden = false; });
+  document.getElementById("helpClose").addEventListener("click", () => { document.getElementById("helpModal").hidden = true; });
+  document.getElementById("helpModal").addEventListener("click", (e) => { if (e.target === document.getElementById("helpModal")) document.getElementById("helpModal").hidden = true; });
+}
 
 // ───── Print ────────────────────────────────────────────────────────────────
+function expandAccordions() { document.querySelectorAll(".tab-panel").forEach(p => { p.hidden = false; p.style.display = "block"; }); }
 document.getElementById("printBtn").addEventListener("click", () => { expandAccordions(); setTimeout(() => window.print(), 100); });
 
 // ───── Sidebar toggle ────────────────────────────────────────────────────────
@@ -954,12 +1150,8 @@ document.getElementById("railToggle").addEventListener("click", () => {
   const btn = document.getElementById("railToggle");
   app.classList.toggle("rail-collapsed");
   btn.innerHTML = app.classList.contains("rail-collapsed") ? "&#x25B6;" : "&#x25C0;";
-  // Let map resize after transition
   setTimeout(() => { if (mapView) mapView.resize(); }, 300);
 });
-
-// ───── Logout ────────────────────────────────────────────────────────────────
-function initLogout() { document.getElementById("logout").addEventListener("click", async () => { await fetch("/api/logout", { method:"POST" }); location.href = "/login"; }); }
 </script>
 </body>
 </html>
