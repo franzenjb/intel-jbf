@@ -58,7 +58,7 @@
     height: 100vh;
   }
   #app.has-scope {
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas: "header header" "rail map";
     transition: grid-template-columns 0.25s ease;
   }
@@ -375,7 +375,7 @@
         <button data-type="division">Division</button>
         <button data-type="region">Region</button>
         <button data-type="chapter">Chapter</button>
-        <button data-type="county" id="countyTypeBtn" hidden>County</button>
+        <button data-type="county" id="countyTypeBtn">County</button>
       </div>
       <div class="combo" id="comboWrap">
         <input id="scopeNameInput" type="text" placeholder="Loading…" autocomplete="off" spellcheck="false" />
@@ -462,9 +462,12 @@
       <input type="text" class="county-search" id="countySearch" placeholder="Search counties..." />
       <div class="metric-selector" id="metricChips">
         <button class="map-chip active" data-metric="risk_score">Overall Risk</button>
-        <button class="map-chip" data-metric="pct_struggling">Combined Hardship</button>
+        <button class="map-chip" data-metric="pct_struggling">Combined (%)</button>
         <button class="map-chip" data-metric="pct_alice">ALICE (%)</button>
         <button class="map-chip" data-metric="poverty_pct">Poverty (%)</button>
+        <button class="map-chip" data-metric="struggling_total">Combined (#)</button>
+        <button class="map-chip" data-metric="alice_total">ALICE (#)</button>
+        <button class="map-chip" data-metric="poverty_total">Poverty (#)</button>
         <button class="map-chip" data-metric="hurricane_risk">Hurricane</button>
         <button class="map-chip" data-metric="flood_risk">Flood</button>
         <button class="map-chip" data-metric="wildfire_risk">Wildfire</button>
@@ -619,6 +622,9 @@ const METRIC_META = {
   wildfire_risk:       { label: "Wildfire risk",       min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
   tornado_risk:        { label: "Tornado risk",        min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
   heat_wave_risk:      { label: "Heat-wave risk",      min:0,  max:100, ramp: "red",   fmt: (v)=>v?.toFixed(0) },
+  alice_total:         { label: "ALICE (people)",       min:0, max:500000, ramp: "red", fmt: (v)=>shortNum(v) },
+  poverty_total:       { label: "Poverty (people)",     min:0, max:300000, ramp: "red", fmt: (v)=>shortNum(v) },
+  struggling_total:    { label: "Hardship (people)",    min:0, max:800000, ramp: "red", fmt: (v)=>shortNum(v) },
   expected_annual_loss:{ label: "Expected annual loss", min:0, max:5e8, ramp: "red",   fmt: (v)=>"$"+shortNum(v) },
 };
 const BASEMAPS = [
@@ -690,9 +696,9 @@ function onScopeTypeChange() {
     return;
   }
   combo.hidden = false;
-  scopeList = scopes[t + "s"] || [];
+  scopeList = t === "county" ? (scopes.counties || []) : (scopes[t + "s"] || []);
   scopeInput.value = "";
-  scopeInput.placeholder = `Search ${scopeList.length} ${t}${scopeList.length === 1 ? "" : "s"}…`;
+  scopeInput.placeholder = `Search ${scopeList.length} ${t === "county" ? "counties" : t + (scopeList.length === 1 ? "" : "s")}…`;
   hidePanel();
 }
 function renderPanel(q) {
@@ -700,7 +706,7 @@ function renderPanel(q) {
   const matches = qq ? scopeList.map((s, i) => ({ ...s, _i: i })).filter(s => s.name.toLowerCase().includes(qq)) : scopeList.map((s, i) => ({ ...s, _i: i }));
   if (!matches.length) { scopePanel.innerHTML = `<div class="combo-empty">No matches</div>`; scopePanel.hidden = false; activeComboIdx = -1; return; }
   const t = currentType();
-  const sub = (s) => t === "chapter" ? ` <span class="muted">· ${s.region || ""}</span>` : t === "region" ? ` <span class="muted">· ${s.division || ""}</span>` : "";
+  const sub = (s) => t === "county" ? ` <span class="muted">· ${s.chapter || ""}</span>` : t === "chapter" ? ` <span class="muted">· ${s.region || ""}</span>` : t === "region" ? ` <span class="muted">· ${s.division || ""}</span>` : "";
   scopePanel.innerHTML = matches.slice(0, 300).map((s, idx) => `<div class="combo-option${idx===0?" active":""}" data-i="${s._i}">${s.name}${sub(s)}</div>`).join("");
   scopePanel.hidden = false; activeComboIdx = 0;
 }
@@ -721,7 +727,38 @@ function initScopeUI() {
   scopePanel.addEventListener("mousedown", (e) => { const el = e.target.closest(".combo-option"); if (!el) return; e.preventDefault(); pickScope(Number(el.dataset.i)); });
 }
 function updateActiveOpt(opts) { opts.forEach((el, i) => el.classList.toggle("active", i === activeComboIdx)); opts[activeComboIdx]?.scrollIntoView({ block:"nearest" }); }
-function pickScope(i) { const s = scopeList[i]; if (!s) return; scopeInput.value = s.name; hidePanel(); activateScope({ type: currentType(), name: s.name, code: s.code, region: s.region, division: s.division }); }
+function pickScope(i) {
+  const s = scopeList[i]; if (!s) return;
+  scopeInput.value = s.name; hidePanel();
+  const t = currentType();
+  if (t === "county") { pickCounty(s); return; }
+  activateScope({ type: t, name: s.name, code: s.code, region: s.region, division: s.division });
+}
+async function pickCounty(s) {
+  showDimmer(true);
+  try {
+    const u = new URLSearchParams({ type: "county", code: s.code });
+    const r = await fetch(`/api/county-data?${u}`);
+    const data = await r.json();
+    if (data.rows && data.rows.length > 0) {
+      showCountyDetail(data.rows[0]);
+      zoomToCountyFips(s.code);
+    }
+  } catch(e) { console.error("county fetch failed", e); }
+  showDimmer(false);
+}
+async function zoomToCountyFips(fips) {
+  const padded = String(fips).padStart(5, "0");
+  const g = countyLayer?.graphics?.find(x => String(x.attributes.county_fips).padStart(5,"0") === padded);
+  if (g) { mapView.goTo({ target: g.geometry, zoom: Math.max(mapView.zoom, 8) }, { duration: 700 }); return; }
+  if (!arcgisMods) return;
+  const { query, Query } = arcgisMods;
+  try {
+    const q = new Query({ where: `FIPS = '${padded}'`, returnGeometry: true, outFields: ["FIPS"], outSpatialReference: { wkid: 102100 } });
+    const result = await query.executeQueryJSON(COUNTY_URL, q);
+    if (result.features.length > 0) mapView.goTo({ target: result.features[0].geometry, zoom: 8 }, { duration: 700 });
+  } catch(e) { console.error("zoom to county failed", e); }
+}
 
 // ───── Metric chips ──────────────────────────────────────────────────────────
 function initMetricChips() {
@@ -797,9 +834,8 @@ async function activateScope(scope) {
   document.getElementById("scopeBadge").textContent = scope.type.toUpperCase();
   document.getElementById("scopeNameDisplay").textContent = scope.name;
   updateBreadcrumb(scope);
-  // Hide county button when switching to non-county scope
+  // Restore KPI grid class when switching away from county detail
   if (scope.type !== "county") {
-    document.getElementById("countyTypeBtn").hidden = true;
     const kpiEl = document.getElementById("kpiGrid");
     kpiEl.className = "kpi-grid";
   }
@@ -810,6 +846,15 @@ async function activateScope(scope) {
   // Fetch data + briefing + zoom in parallel — don't wait for choropleth
   const [, data, didZoom] = await Promise.all([renderBriefing(scope), fetchCountyData(scope), drawScopeOutline(scope)]);
   countyData = data;
+
+  // Compute absolute people counts for ALICE/Poverty/Combined
+  if (countyData && countyData.rows) {
+    for (const r of countyData.rows) {
+      r.alice_total = r.pct_alice != null && r.population ? Math.round(r.population * r.pct_alice / 100) : null;
+      r.poverty_total = r.poverty_pct != null && r.population ? Math.round(r.population * r.poverty_pct / 100) : null;
+      r.struggling_total = r.pct_struggling != null && r.population ? Math.round(r.population * r.pct_struggling / 100) : null;
+    }
+  }
 
   // Sidebar is ready — show KPIs, top counties, chat immediately
   renderTopCounties(); renderLegend(); updateKPIs(); loadChat(scope); updateSuggestions(scope);
@@ -938,23 +983,28 @@ function valueToColor(v, meta, ramp) {
 }
 // ───── County detail in sidebar ──────────────────────────────────────────────
 function showCountyDetail(attrs) {
-  // Show "County" as 5th scope level in header
-  const countyBtn = document.getElementById("countyTypeBtn");
-  countyBtn.hidden = false;
-  countyBtn.textContent = attrs.county_name || "County";
-  // Activate county scope in the header tabs
-  document.querySelectorAll(".type-tabs button").forEach(b => b.classList.toggle("active", b === countyBtn));
-  document.getElementById("comboWrap").hidden = true;
-  // Update sidebar to show county detail
+  // Set County tab active in header (permanent tab)
+  typeTabs.forEach(b => b.classList.toggle("active", b.dataset.type === "county"));
+  // Show combo with county name for continued search
+  const combo = document.getElementById("comboWrap");
+  combo.hidden = false;
+  scopeList = scopes.counties || [];
+  scopeInput.value = `${attrs.county_name}, ${attrs.state_abbr}`;
+  scopeInput.placeholder = `Search ${scopeList.length} counties…`;
+  hidePanel();
+
+  activeScope = { type: "county", name: `${attrs.county_name}, ${attrs.state_abbr}`, code: String(attrs.county_fips).padStart(5, "0") };
+  document.getElementById("app").classList.add("has-scope");
   document.getElementById("scopeBadge").textContent = "COUNTY";
   document.getElementById("scopeNameDisplay").textContent = `${attrs.county_name}, ${attrs.state_abbr}`;
   updateBreadcrumb({ type: "county", name: `${attrs.county_name}, ${attrs.state_abbr}`, chapter: attrs.chapter, region: attrs.region, division: attrs.division });
-  // Replace KPI grid with county detail
+
   const kpiEl = document.getElementById("kpiGrid");
   kpiEl.hidden = false;
   document.getElementById("divisionTable").hidden = true;
+  document.getElementById("briefingSection").hidden = true;
   kpiEl.innerHTML = buildCountyDetailHTML(attrs);
-  kpiEl.className = ""; // Remove kpi-grid class for county layout
+  kpiEl.className = "";
   showTab("overview");
 }
 function buildCountyDetailHTML(a) {

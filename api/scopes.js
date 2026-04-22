@@ -71,10 +71,29 @@ async function loadHierarchy() {
     dedupeChapters.push(c);
   }
 
+  // Counties for the county-level scope selector
+  const countyRows = await sql(`
+    SELECT DISTINCT county_fips, county_name, state_abbr, chapter, region, division
+    FROM county_rankings
+    WHERE county_fips IS NOT NULL AND county_name IS NOT NULL
+    ORDER BY county_name, state_abbr
+    LIMIT 5000
+  `);
+
+  const counties = countyRows.map(r => ({
+    name: `${r.county_name}, ${r.state_abbr}`,
+    code: String(r.county_fips).padStart(5, "0"),
+    state_abbr: r.state_abbr,
+    chapter: r.chapter,
+    region: r.region,
+    division: r.division,
+  }));
+
   return {
     divisions: [...divisions.values()].sort((a, b) => a.name.localeCompare(b.name)),
     regions: [...regions.values()].sort((a, b) => a.name.localeCompare(b.name)),
     chapters: dedupeChapters.sort((a, b) => a.name.localeCompare(b.name)),
+    counties,
   };
 }
 
