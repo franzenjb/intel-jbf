@@ -19,13 +19,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const OUT = resolve(ROOT, "data", "scope-briefings.json");
 
-const PROMPT_VERSION = "v1-2026-04-19";
+const PROMPT_VERSION = "v2-2026-04-22";
 const MODEL = "claude-sonnet-4-5-20250929";
 
 const args = Object.fromEntries(
   process.argv.slice(2).map(a => a.replace(/^--/, "").split("=")).map(([k, v]) => [k, v ?? true])
 );
-const ONLY = args.only || null;            // division | region | chapter
+const ONLY = args.only || null;            // national | state | division | region | chapter
 const LIMIT = args.limit ? Number(args.limit) : Infinity;
 const RESUME = Boolean(args.resume);
 
@@ -34,6 +34,7 @@ if (!process.env.SUPABASE_ANON_KEY) { console.error("SUPABASE_ANON_KEY not set")
 
 function buildSynthesisPrompt(snap) {
   const s = snap;
+  const scopeType = (s.scope.type || "").toLowerCase();
   const leaders = (s.top_hazard_leaders || []).map(h => `${h.name}, ${h.state} (${h.score})`).join("; ");
   const struggling = (s.top_struggling || []).map(h => `${h.name}, ${h.state} (${h.pct}%)`).join("; ");
   const topRisk = (s.top_risk || []).slice(0, 2).map(r => `${r.name}, ${r.state} (risk ${r.risk})`).join("; ");
@@ -45,19 +46,41 @@ function buildSynthesisPrompt(snap) {
   const riskDelta = p50Risk != null ? `${s.avg_risk > p50Risk ? "+" : ""}${Math.round(s.avg_risk - p50Risk)} vs US median` : "";
   const strugDelta = p50Strug != null ? `${s.avg_pct_struggling > p50Strug ? "+" : ""}${(s.avg_pct_struggling - p50Strug).toFixed(1)}pp vs US median` : "";
 
-  return `You are briefing a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type}). Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
-
-SCOPE FACTS
+  const facts = `SCOPE FACTS
 - Counties: ${s.counties}
 - Population: ${s.population.toLocaleString()}
-- Avg overall risk: ${s.avg_risk} (${riskDelta})
-- Avg % struggling (ALICE+poverty): ${s.avg_pct_struggling}% (${strugDelta})
+- Avg overall risk: ${s.avg_risk}${riskDelta ? ` (${riskDelta})` : ""}
+- Avg % struggling (ALICE+poverty): ${s.avg_pct_struggling}%${strugDelta ? ` (${strugDelta})` : ""}
 - Total expected annual loss: $${shortUsd(s.total_expected_annual_loss)}
 - Top hazard across scope: ${s.top_hazard?.label || "n/a"} (avg ${s.top_hazard?.avg || "n/a"}/100)
 - Worst-hit counties on top hazard: ${leaders || "n/a"}
 - Highest overall-risk counties: ${topRisk || "n/a"}
 - Most economically fragile counties: ${struggling || "n/a"}
-- Fire-response service gap: ${fireGapLine}
+- Fire-response service gap: ${fireGapLine}`;
+
+  if (scopeType === "national") {
+    const divLines = (s.division_summaries || []).map(d =>
+      `  ${d.division}: ${(d.population || 0).toLocaleString()} pop, avg risk ${Math.round(d.avg_risk || 0)}, ${Math.round(d.avg_struggling || 0)}% struggling, $${shortUsd(d.total_eal)} annual loss`
+    ).join("\n");
+    return `You are briefing the CEO of the American Red Cross. Write EXACTLY 2 punchy sentences summarizing the most urgent national risk landscape. Name the highest-risk division and one specific county. No preamble. No markdown. No headers. Just 2 sentences.
+
+${facts}
+${divLines ? `\nDIVISION BREAKDOWN\n${divLines}` : ""}
+
+Lead with the single biggest story — which division or region concentrates the most risk or economic fragility, and what hazard drives it.`;
+  }
+
+  if (scopeType === "state") {
+    return `You are briefing a Red Cross state lead for **${s.scope.name}**. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+
+${facts}
+
+Lead with the hazard or fragility angle that's most off-the-charts vs the US median. Name at least one specific county.`;
+  }
+
+  return `You are briefing a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type}). Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+
+${facts}
 
 Lead with the hazard or fragility angle that's most off-the-charts vs the US median. Name at least one specific county.`;
 }
@@ -108,6 +131,14 @@ async function loadScopes() {
     if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 200)}`);
     return r.json();
   };
+  const states = await sql(`
+    SELECT DISTINCT state_abbr AS code
+    FROM county_rankings
+    WHERE state_abbr IS NOT NULL
+    ORDER BY state_abbr
+  `);
+  const STATE_NAMES = {AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",DC:"District of Columbia",PR:"Puerto Rico",VI:"Virgin Islands",GU:"Guam",AS:"American Samoa",MP:"Northern Mariana Islands"};
+  const stateScopes = states.map(s => ({ name: STATE_NAMES[s.code] || s.code, code: s.code }));
   const divisions = await sql(`
     SELECT DISTINCT division AS name, division_code AS code
     FROM county_rankings
@@ -126,7 +157,7 @@ async function loadScopes() {
     WHERE chapter IS NOT NULL AND chapter <> 'Not Assigned'
     ORDER BY chapter
   `);
-  return { divisions, regions, chapters };
+  return { states: stateScopes, divisions, regions, chapters };
 }
 
 function costUsd(usage) {
@@ -155,10 +186,12 @@ async function main() {
   cache.model = MODEL;
 
   log("Loading scopes...");
-  const { divisions, regions, chapters } = await loadScopes();
-  log(`Scopes: ${divisions.length} divisions, ${regions.length} regions, ${chapters.length} chapters`);
+  const { states, divisions, regions, chapters } = await loadScopes();
+  log(`Scopes: 1 national, ${states.length} states, ${divisions.length} divisions, ${regions.length} regions, ${chapters.length} chapters`);
 
   const targets = [];
+  if (!ONLY || ONLY === "national") targets.push({ type: "national", name: "United States", code: null });
+  if (!ONLY || ONLY === "state") targets.push(...states.map(s => ({ type: "state", ...s })));
   if (!ONLY || ONLY === "division") targets.push(...divisions.map(d => ({ type: "division", ...d })));
   if (!ONLY || ONLY === "region") targets.push(...regions.map(r => ({ type: "region", ...r })));
   if (!ONLY || ONLY === "chapter") targets.push(...chapters.map(c => ({ type: "chapter", ...c })));

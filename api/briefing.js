@@ -19,7 +19,7 @@ import { captureDataSnapshot } from "./_snapshot.js";
 const CACHE_PATH = resolve(process.cwd(), "data", "scope-briefings.json");
 
 const MODEL = "claude-sonnet-4-5-20250929";
-const PROMPT_VERSION = "v1-2026-04-19";
+const PROMPT_VERSION = "v2-2026-04-22";
 
 let _cache = null;
 let _cacheLoadedAt = 0;
