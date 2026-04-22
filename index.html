@@ -1216,20 +1216,26 @@ function updateKPIs() {
   const nat = countyData.national || {};
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
   if (!isNat && struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
-  // Population-weighted hazard averages, excluding ubiquitous/chronic hazards
-  // (strong wind & drought are everywhere and not actionable for disaster response)
+  // Top hazard = which hazard is #1 for the most people in this scope
+  // For each county, find its dominant hazard, then see which hazard dominates the most population
   const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
-  const hazAvgs = HAZARD_KEYS.filter(k => !TOP_HAZ_EXCLUDE.has(k)).map(k => {
-    let wSum = 0, wTotal = 0;
-    for (const r of rows) {
-      const v = Number(r[k]); const p = Number(r.population) || 0;
-      if (!isNaN(v) && v > 0 && p > 0) { wSum += v * p; wTotal += p; }
+  const hazWins = {};
+  for (const r of rows) {
+    let best = null, bestV = -1;
+    for (const k of HAZARD_KEYS) {
+      if (TOP_HAZ_EXCLUDE.has(k)) continue;
+      const v = Number(r[k]);
+      if (!isNaN(v) && v > bestV) { bestV = v; best = k; }
     }
-    return { k, v: wTotal > 0 ? wSum / wTotal : null };
-  }).filter(x => x.v != null);
-  hazAvgs.sort((a, b) => b.v - a.v);
-  const top = hazAvgs[0];
-  if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `pop-wtd ${top.v.toFixed(0)}/100`; }
+    if (best) {
+      if (!hazWins[best]) hazWins[best] = { pop: 0, count: 0 };
+      hazWins[best].pop += Number(r.population) || 0;
+      hazWins[best].count++;
+    }
+  }
+  const hazRanked = Object.entries(hazWins).map(([k, v]) => ({ k, ...v })).sort((a, b) => b.pop - a.pop);
+  const top = hazRanked[0];
+  if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `${top.count} counties, ${shortNum(top.pop)} people`; }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
 
