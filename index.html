@@ -289,11 +289,11 @@
   .kpi-sm .kpi-unit { font-size: 12px; }
 
   /* ───── Breadcrumb ──────────────────────────────────────────────────────── */
-  .breadcrumb { display: flex; align-items: center; gap: 6px; padding: 0 20px 10px; flex-shrink: 0; }
-  .breadcrumb a { color: var(--accent); font: 600 12px/1 inherit; text-decoration: none; cursor: pointer; }
+  .breadcrumb { display: flex; align-items: center; gap: 4px; padding: 0 20px 10px; flex-shrink: 0; white-space: nowrap; overflow: hidden; }
+  .breadcrumb a { color: var(--accent); font: 600 12px/1.2 inherit; text-decoration: none; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; flex-shrink: 1; }
   .breadcrumb a:hover { text-decoration: underline; }
-  .breadcrumb .sep-arrow { color: var(--dim); font-size: 11px; }
-  .breadcrumb .current { color: var(--fg2); font: 600 12px/1 inherit; }
+  .breadcrumb .sep-arrow { color: var(--dim); font-size: 10px; flex-shrink: 0; }
+  .breadcrumb .current { color: var(--fg2); font: 600 12px/1.2 inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
 
   /* ───── Division summary table ─────────────────────────────────────────── */
   .div-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -661,6 +661,15 @@ let currentBasemapId = "gray-vector";
 let currentTheme = "light";
 function shortNum(v) { if(v==null)return"—";if(v>=1e9)return(v/1e9).toFixed(1)+"B";if(v>=1e6)return(v/1e6).toFixed(1)+"M";if(v>=1e3)return(v/1e3).toFixed(0)+"K";return String(Math.round(v)); }
 function fmtNum(v) { return v == null ? "—" : Math.round(v).toLocaleString(); }
+function ensureComputedFields(rows) {
+  if (!rows || rows._computed) return;
+  for (const r of rows) {
+    r.alice_total = r.pct_alice != null && r.population ? Math.round(Number(r.population) * Number(r.pct_alice) / 100) : null;
+    r.poverty_total = r.poverty_pct != null && r.population ? Math.round(Number(r.population) * Number(r.poverty_pct) / 100) : null;
+    r.struggling_total = r.pct_struggling != null && r.population ? Math.round(Number(r.population) * Number(r.pct_struggling) / 100) : null;
+  }
+  rows._computed = true;
+}
 
 let scopes = null, scopeList = [], activeScope = null, activeMetric = "risk_score";
 let countyData = null, activeComboIdx = -1, chatHistory = [];
@@ -870,13 +879,7 @@ async function activateScope(scope) {
   countyData = data;
 
   // Compute absolute people counts for ALICE/Poverty/Combined
-  if (countyData && countyData.rows) {
-    for (const r of countyData.rows) {
-      r.alice_total = r.pct_alice != null && r.population ? Math.round(r.population * r.pct_alice / 100) : null;
-      r.poverty_total = r.poverty_pct != null && r.population ? Math.round(r.population * r.poverty_pct / 100) : null;
-      r.struggling_total = r.pct_struggling != null && r.population ? Math.round(r.population * r.pct_struggling / 100) : null;
-    }
-  }
+  if (countyData && countyData.rows) ensureComputedFields(countyData.rows);
 
   // Sidebar is ready — show KPIs, top counties, chat immediately
   renderTopCounties(); renderLegend(); updateKPIs(); loadChat(scope); updateSuggestions(scope);
@@ -984,6 +987,7 @@ async function fetchGeometries(fipsList) {
 
 async function renderChoropleth() {
   if (!countyData || !arcgisMods) return;
+  ensureComputedFields(countyData.rows);
   const { Graphic, SimpleFillSymbol, SimpleLineSymbol } = arcgisMods;
   countyLayer.removeAll();
   const fipsByRow = new Map();
@@ -1080,6 +1084,7 @@ function renderLegend() {
 let showAllCounties = false;
 function renderTopCounties() {
   if (!countyData) return;
+  ensureComputedFields(countyData.rows);
   const meta = METRIC_META[activeMetric];
   document.getElementById("top5MetricLabel").textContent = `by ${meta.label.toLowerCase()}`;
   const searchQ = (document.getElementById("countySearch")?.value || "").trim().toLowerCase();
