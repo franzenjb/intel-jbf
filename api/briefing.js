@@ -71,7 +71,10 @@ function buildSynthesisPrompt(snap) {
   const riskDelta = p50Risk != null ? `${s.avg_risk > p50Risk ? "+" : ""}${Math.round(s.avg_risk - p50Risk)} vs US median` : "";
   const strugDelta = p50Strug != null ? `${s.avg_pct_struggling > p50Strug ? "+" : ""}${(s.avg_pct_struggling - p50Strug).toFixed(1)}pp vs US median` : "";
 
-  return `You are briefing a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type}). Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+  const roleLabel = s.scope.type === "national"
+    ? "a senior Red Cross national leadership team member overseeing the entire United States"
+    : `a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type})`;
+  return `You are briefing ${roleLabel}. Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
 
 SCOPE FACTS
 - Counties: ${s.counties}

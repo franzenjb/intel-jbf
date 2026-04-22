@@ -1,10 +1,14 @@
 import { isAuthed } from "./_auth.js";
 
-const UPSTREAM = process.env.SMART_QUERY_URL || "https://explorer.jbf.com/api/smart-query";
+const SMART_QUERY_URL = process.env.SMART_QUERY_URL || "https://explorer.jbf.com/api/smart-query";
+const LIGHTRAG_URL = process.env.LIGHTRAG_URL || "https://explorer.jbf.com/api/lightrag";
 
 function scopePrefix(scope) {
   if (!scope || !scope.type || !scope.name) return "";
   const kind = scope.type.toLowerCase();
+  if (kind === "national") {
+    return `You are advising American Red Cross national leadership. Your answers should address the entire United States. When you run supabase_sql, do NOT filter by division/region/chapter — use the full county_rankings table.\n\n---\n\n`;
+  }
   const header =
     kind === "division"
       ? `You are advising leadership of the **${scope.name}** (a Red Cross division). All answers must be scoped to counties within this division. When you run supabase_sql, always filter with \`division = '${scope.name.replace(/'/g, "''")}'\` (or \`division_code = '${scope.code || ""}'\`). Cite the division in your framing.`
@@ -12,6 +16,28 @@ function scopePrefix(scope) {
       ? `You are advising leadership of the **${scope.name}** (a Red Cross region${scope.division ? ` within the ${scope.division}` : ""}). All answers must be scoped to counties within this region. When you run supabase_sql, always filter with \`region = '${scope.name.replace(/'/g, "''")}'\` (or \`region_code = '${scope.code || ""}'\`).`
       : `You are advising leadership of the **${scope.name}** (a Red Cross chapter${scope.region ? ` in the ${scope.region}` : ""}). All answers must be scoped to counties within this chapter. When you run supabase_sql, always filter with \`chapter = '${scope.name.replace(/'/g, "''")}'\` (or \`chapter_code = '${scope.code || ""}'\`).`;
   return `${header}\n\n---\n\n`;
+}
+
+async function querySmartQuery(question) {
+  const r = await fetch(SMART_QUERY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+  if (!r.ok) throw new Error(`smart-query ${r.status}`);
+  const j = await r.json();
+  return j.answer || j.response || "";
+}
+
+async function queryLightRAG(question) {
+  const r = await fetch(LIGHTRAG_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: question, mode: "hybrid" }),
+  });
+  if (!r.ok) return null; // non-fatal — degrade gracefully
+  const j = await r.json();
+  return j.response || j.answer || null;
 }
 
 export default async function handler(req, res) {
@@ -26,15 +52,19 @@ export default async function handler(req, res) {
   const scoped = scopePrefix(scope) + question;
 
   try {
-    const r = await fetch(UPSTREAM, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: scoped }),
-    });
-    const text = await r.text();
-    res.status(r.status);
-    res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
-    return res.send(text);
+    // Fan out: smart-query (SQL data) + LightRAG (knowledge graph) in parallel
+    const [sqlAnswer, ragContext] = await Promise.all([
+      querySmartQuery(scoped),
+      queryLightRAG(question).catch(() => null),
+    ]);
+
+    // If LightRAG returned context, append it as supplemental
+    let answer = sqlAnswer;
+    if (ragContext && ragContext.length > 20) {
+      answer += `\n\n---\n\n**Knowledge Graph Context**\n\n${ragContext}`;
+    }
+
+    return res.status(200).json({ answer, sources: { smart_query: !!sqlAnswer, lightrag: !!ragContext } });
   } catch (e) {
     return res.status(502).json({ error: `Upstream error: ${e.message}` });
   }

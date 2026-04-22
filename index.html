@@ -317,11 +317,12 @@
     <div class="brand"><span class="pulse"></span><span class="rc">Red Cross</span> Intel</div>
     <div class="scope-row">
       <div class="type-tabs" role="tablist">
-        <button data-type="division" class="active">Division</button>
+        <button data-type="national" class="active">National</button>
+        <button data-type="division">Division</button>
         <button data-type="region">Region</button>
         <button data-type="chapter">Chapter</button>
       </div>
-      <div class="combo">
+      <div class="combo" id="comboWrap">
         <input id="scopeNameInput" type="text" placeholder="Loading…" autocomplete="off" spellcheck="false" />
         <div id="scopeNamePanel" class="combo-panel" hidden></div>
       </div>
@@ -571,12 +572,8 @@ async function bootstrap() {
   initTabs();
   await initMap();
   initMapControls();
-  const se = scopes.divisions.find(d => d.name === "Southeast and Caribbean Division");
-  if (se) {
-    setType("division");
-    document.getElementById("scopeNameInput").value = se.name;
-    activateScope({ type:"division", name:se.name, code:se.code });
-  }
+  // Default to national view
+  setType("national");
 }
 
 // ───── Scope API ─────────────────────────────────────────────────────────────
@@ -593,6 +590,14 @@ const scopeInput = document.getElementById("scopeNameInput");
 const scopePanel = document.getElementById("scopeNamePanel");
 function onScopeTypeChange() {
   const t = currentType();
+  const combo = document.getElementById("comboWrap");
+  if (t === "national") {
+    combo.hidden = true;
+    hidePanel();
+    activateScope({ type: "national", name: "United States", code: "" });
+    return;
+  }
+  combo.hidden = false;
   scopeList = scopes[t + "s"] || [];
   scopeInput.value = "";
   scopeInput.placeholder = `Search ${scopeList.length} ${t}${scopeList.length === 1 ? "" : "s"}…`;
@@ -744,6 +749,10 @@ async function drawScopeOutline(scope) {
   if (!arcgisMods) return false;
   const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
   outlineLayer.removeAll();
+  if (scope.type === "national") {
+    mapView.goTo({ center: [-96, 38], zoom: 4 }, { duration: 900 });
+    return true;
+  }
   const ARC = "https://services.arcgis.com/pGfbNJoYypmNq86F/arcgis/rest/services/Master_ARC_Geography_2022/FeatureServer/";
   const layerByType = { division: "1", region: "2", chapter: "3" };
   const fieldByType = { division: "Division", region: "Region", chapter: "Chapter" };
