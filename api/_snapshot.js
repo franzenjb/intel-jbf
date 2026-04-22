@@ -106,9 +106,11 @@ export async function captureDataSnapshot(scope) {
     WHERE ${where}
   `);
 
-  // Top hazard by population-weighted average
+  // Top hazard by population-weighted average (exclude ubiquitous strong wind & drought)
+  const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
   let topHazard = null;
   for (const k of HAZARD_KEYS) {
+    if (TOP_HAZ_EXCLUDE.has(k)) continue;
     const v = Number(agg[k]);
     if (!Number.isFinite(v)) continue;
     if (!topHazard || v > topHazard.avg) topHazard = { key: k, label: HAZARD_LABEL[k], avg: Math.round(v) };

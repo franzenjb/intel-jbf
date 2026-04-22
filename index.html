@@ -1216,9 +1216,10 @@ function updateKPIs() {
   const nat = countyData.national || {};
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
   if (!isNat && struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
-  // Population-weighted hazard averages — so high-pop coastal metros with hurricane
-  // risk outweigh low-pop inland counties with tornado risk
-  const hazAvgs = HAZARD_KEYS.map(k => {
+  // Population-weighted hazard averages, excluding ubiquitous/chronic hazards
+  // (strong wind & drought are everywhere and not actionable for disaster response)
+  const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
+  const hazAvgs = HAZARD_KEYS.filter(k => !TOP_HAZ_EXCLUDE.has(k)).map(k => {
     let wSum = 0, wTotal = 0;
     for (const r of rows) {
       const v = Number(r[k]); const p = Number(r.population) || 0;
