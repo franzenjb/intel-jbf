@@ -775,27 +775,55 @@ async function drawScopeOutline(scope) {
 }
 
 // ───── Choropleth ────────────────────────────────────────────────────────────
+// Geometry cache: FIPS → { geometry, attributes } — survives metric switches
+const geoCache = new Map();
+let geoCacheScopeKey = null;
+
+const COUNTY_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Counties_Generalized_Boundaries/FeatureServer/0";
+const BATCH_SIZE = 500;
+
+async function fetchGeometries(fipsList) {
+  const { query, Query } = arcgisMods;
+  // Batch into chunks to avoid ArcGIS maxRecordCount limits
+  const batches = [];
+  for (let i = 0; i < fipsList.length; i += BATCH_SIZE) batches.push(fipsList.slice(i, i + BATCH_SIZE));
+  const results = await Promise.all(batches.map(batch => {
+    const inList = batch.map(x => `'${x}'`).join(",");
+    const q = new Query({ where: `FIPS IN (${inList})`, returnGeometry: true, outFields: ["FIPS", "NAME", "STATE_NAME"], outSpatialReference: { wkid: 102100 } });
+    return query.executeQueryJSON(COUNTY_URL, q).catch(e => { console.error("batch query failed", e); return { features: [] }; });
+  }));
+  return results.flatMap(r => r.features);
+}
+
 async function renderChoropleth() {
   if (!countyData || !arcgisMods) return;
-  const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
+  const { Graphic, SimpleFillSymbol, SimpleLineSymbol } = arcgisMods;
   countyLayer.removeAll();
   const fipsByRow = new Map();
   for (const r of countyData.rows || []) { if (r.county_fips) fipsByRow.set(String(r.county_fips).padStart(5, "0"), r); }
   if (!fipsByRow.size) return;
-  const COUNTY_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Counties_Generalized_Boundaries/FeatureServer/0";
-  const fipsList = [...fipsByRow.keys()].map(x => `'${x}'`).join(",");
-  const q = new Query({ where: `FIPS IN (${fipsList})`, returnGeometry: true, outFields: ["FIPS", "NAME", "STATE_NAME"], outSpatialReference: { wkid: 102100 } });
-  let result;
-  try { result = await query.executeQueryJSON(COUNTY_URL, q); } catch (e) { console.error("county query failed", e); return; }
+
+  // Cache key: use scope identity so we re-fetch when scope changes, not on metric switch
+  const scopeKey = `${activeScope?.type}|${activeScope?.code || activeScope?.name}`;
+  const needFetch = geoCacheScopeKey !== scopeKey;
+  if (needFetch) {
+    geoCache.clear();
+    geoCacheScopeKey = scopeKey;
+    const features = await fetchGeometries([...fipsByRow.keys()]);
+    for (const f of features) {
+      const fips = String(f.attributes.FIPS).padStart(5, "0");
+      geoCache.set(fips, { geometry: f.geometry, arcAttrs: f.attributes });
+    }
+  }
+
   const meta = METRIC_META[activeMetric];
   const outlineColor = currentTheme === "light" ? [30, 30, 30, 0.35] : [255, 255, 255, 0.22];
-  for (const f of result.features) {
-    const fips = String(f.attributes.FIPS).padStart(5, "0");
+  for (const [fips, geo] of geoCache) {
     const row = fipsByRow.get(fips); if (!row) continue;
     const v = Number(row[activeMetric]);
     const color = valueToColor(v, meta, RAMP);
     const sym = new SimpleFillSymbol({ color, outline: new SimpleLineSymbol({ color: outlineColor, width: 0.5 }) });
-    countyLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: { ...row, __display_name: `${row.county_name}, ${row.state_abbr}` } }));
+    countyLayer.add(new Graphic({ geometry: geo.geometry, symbol: sym, attributes: { ...row, __display_name: `${row.county_name}, ${row.state_abbr}` } }));
   }
 }
 function valueToColor(v, meta, ramp) {
