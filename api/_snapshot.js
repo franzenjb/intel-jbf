@@ -89,7 +89,10 @@ export async function captureDataSnapshot(scope) {
   if (!SUPABASE_ANON_KEY) throw new Error("SUPABASE_ANON_KEY not configured");
   const where = filterFor(scope);
 
-  const hazardCols = HAZARD_KEYS.map(k => `AVG(NULLIF(${k}, 0)) AS ${k}`).join(", ");
+  // Population-weighted hazard averages for more meaningful "top hazard"
+  const hazardCols = HAZARD_KEYS.map(k =>
+    `SUM(CASE WHEN ${k} > 0 THEN ${k} * population END) / NULLIF(SUM(CASE WHEN ${k} > 0 THEN population END), 0) AS ${k}`
+  ).join(", ");
 
   const [agg] = await sql(`
     SELECT
@@ -103,7 +106,7 @@ export async function captureDataSnapshot(scope) {
     WHERE ${where}
   `);
 
-  // Top hazard by avg risk across scope
+  // Top hazard by population-weighted average
   let topHazard = null;
   for (const k of HAZARD_KEYS) {
     const v = Number(agg[k]);

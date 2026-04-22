@@ -1080,11 +1080,11 @@ async function fetchCountyNarrative(countyName, stateAbbr, fips) {
   const cached = localStorage.getItem(cacheKey);
   if (cached) { el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.textContent = cached; return; }
   try {
-    const question = `In 100-150 words, describe ${countyName}, ${stateAbbr}. Cover its geography, economy, demographics, and any notable community features or disaster history. Write in plain prose, no bullet points, no tables, no markdown formatting.`;
-    const r = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, scope: { type: "county", name: `${countyName}, ${stateAbbr}`, code: fips } }) });
+    const u = new URLSearchParams({ fips, name: countyName, state: stateAbbr });
+    const r = await fetch(`/api/narrative?${u}`);
     const j = await r.json();
-    const text = (j.answer || "").replace(/---[\s\S]*$/, "").replace(/\*\*/g, "").trim();
-    if (text && text.length > 20 && !text.includes("iteration limit")) {
+    const text = (j.narrative || "").replace(/\*\*/g, "").trim();
+    if (text && text.length > 20) {
       el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.textContent = text;
       localStorage.setItem(cacheKey, text);
     } else {
@@ -1216,10 +1216,19 @@ function updateKPIs() {
   const nat = countyData.national || {};
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
   if (!isNat && struggAvg != null && nat.p50_struggling != null) { const d = struggAvg - nat.p50_struggling; document.getElementById("kpiStrugglingPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp vs US median`; }
-  const hazAvgs = HAZARD_KEYS.map(k => ({ k, v: avg(rows.map(r => r[k])) })).filter(x => x.v != null);
+  // Population-weighted hazard averages — so high-pop coastal metros with hurricane
+  // risk outweigh low-pop inland counties with tornado risk
+  const hazAvgs = HAZARD_KEYS.map(k => {
+    let wSum = 0, wTotal = 0;
+    for (const r of rows) {
+      const v = Number(r[k]); const p = Number(r.population) || 0;
+      if (!isNaN(v) && v > 0 && p > 0) { wSum += v * p; wTotal += p; }
+    }
+    return { k, v: wTotal > 0 ? wSum / wTotal : null };
+  }).filter(x => x.v != null);
   hazAvgs.sort((a, b) => b.v - a.v);
   const top = hazAvgs[0];
-  if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `avg ${top.v.toFixed(0)}/100`; }
+  if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `pop-wtd ${top.v.toFixed(0)}/100`; }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
 
