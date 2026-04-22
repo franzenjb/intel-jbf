@@ -202,19 +202,21 @@
   .ask-header { display: flex; align-items: center; gap: 16px; padding: 20px 32px; border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
   .ask-header h2 { font: 800 18px/1 inherit; color: var(--fg); flex: 1; }
   .ask-header .scope-label { color: var(--muted); font: 600 13px/1 inherit; }
-  .ask-close { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font: 600 13px/1 inherit; color: var(--fg2); cursor: pointer; transition: all .15s; }
-  .ask-close:hover { border-color: var(--red); color: var(--red); }
-  .ask-body { flex: 1; overflow-y: auto; padding: 24px 32px; max-width: 900px; width: 100%; margin: 0 auto; }
+  .ask-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font: 600 13px/1 inherit; color: var(--fg2); cursor: pointer; transition: all .15s; }
+  .ask-btn:hover { border-color: var(--red); color: var(--red); }
+  .ask-btn.primary { background: var(--red); color: #fff; border-color: var(--red); }
+  .ask-btn.primary:hover { background: #d41628; }
+  .ask-body { flex: 1; overflow-y: auto; padding: 24px 40px; width: 100%; }
   .ask-body .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 16px; }
   .ask-body .suggestion { background: var(--panel); border: 1px solid var(--border); color: var(--fg2); border-radius: 20px; padding: 10px 20px; font: 500 14px/1.3 inherit; cursor: pointer; transition: all .15s; }
   .ask-body .suggestion:hover { border-color: var(--red); background: var(--red-dim); color: var(--fg); }
-  .ask-body .msg { padding: 18px 24px; border-radius: 14px; line-height: 1.7; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 8px; }
-  .ask-body .msg.user { background: var(--red-dim); border: 1px solid rgba(237,27,46,0.12); align-self: flex-end; max-width: 70%; color: var(--fg); margin-left: auto; }
-  .ask-body .msg.bot { background: var(--panel); border: 1px solid var(--border); color: var(--fg2); }
+  .ask-body .msg { padding: 18px 24px; border-radius: 14px; line-height: 1.7; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 8px; overflow-x: auto; }
+  .ask-body .msg.user { background: var(--red-dim); border: 1px solid rgba(237,27,46,0.12); align-self: flex-end; max-width: 60%; color: var(--fg); margin-left: auto; }
+  .ask-body .msg.bot { background: var(--panel); border: 1px solid var(--border); color: var(--fg2); white-space: normal; }
   .ask-body .msg.bot.pending { color: var(--muted); font-style: italic; }
   .ask-body #messages { display: flex; flex-direction: column; gap: 12px; }
   .ask-footer { padding: 16px 32px; border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
-  .ask-footer form { display: flex; gap: 10px; max-width: 900px; margin: 0 auto; }
+  .ask-footer form { display: flex; gap: 10px; }
   .ask-footer textarea { flex: 1; background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px; font: 15px/1.4 inherit; resize: none; min-height: 48px; max-height: 120px; }
   .ask-footer textarea:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
   .ask-footer button.send { background: var(--red); color: #fff; border: 0; border-radius: 12px; padding: 0 28px; font: 700 20px/1 inherit; cursor: pointer; transition: background .15s; }
@@ -534,7 +536,8 @@
   <div class="ask-header">
     <h2>Ask Intel</h2>
     <span class="scope-label" id="askScopeLabel"></span>
-    <button class="ask-close" id="askClose">Close</button>
+    <button class="ask-btn" id="askClear" title="Clear conversation">Clear</button>
+    <button class="ask-btn primary" id="askClose">Back to Map</button>
   </div>
   <div class="ask-body">
     <div class="suggestions" id="suggestions"></div>
@@ -1225,8 +1228,17 @@ function openAskModal() {
   document.getElementById("q").focus();
 }
 function closeAskModal() { document.getElementById("askModal").hidden = true; }
+function clearChat() {
+  chatHistory = [];
+  if (activeScope) {
+    localStorage.removeItem(chatKey(activeScope));
+  }
+  renderChat();
+  updateSuggestions(activeScope);
+}
 function initAskModal() {
   document.getElementById("askClose").addEventListener("click", closeAskModal);
+  document.getElementById("askClear").addEventListener("click", clearChat);
   document.getElementById("openAskBtn")?.addEventListener("click", openAskModal);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.getElementById("askModal").hidden) closeAskModal(); });
 }
