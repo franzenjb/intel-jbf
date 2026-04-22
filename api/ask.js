@@ -10,7 +10,9 @@ function scopePrefix(scope) {
     return `You are advising American Red Cross national leadership. Your answers should address the entire United States. When you run supabase_sql, do NOT filter by division/region/chapter — use the full county_rankings table.\n\n---\n\n`;
   }
   const header =
-    kind === "division"
+    kind === "state"
+      ? `You are providing analysis for the state of **${scope.name}**. All answers must be scoped to counties within this state. When you run supabase_sql, always filter with \`state_abbr = '${(scope.code || scope.name).replace(/'/g, "''")}'\`.`
+      : kind === "division"
       ? `You are advising leadership of the **${scope.name}** (a Red Cross division). All answers must be scoped to counties within this division. When you run supabase_sql, always filter with \`division = '${scope.name.replace(/'/g, "''")}'\` (or \`division_code = '${scope.code || ""}'\`). Cite the division in your framing.`
       : kind === "region"
       ? `You are advising leadership of the **${scope.name}** (a Red Cross region${scope.division ? ` within the ${scope.division}` : ""}). All answers must be scoped to counties within this region. When you run supabase_sql, always filter with \`region = '${scope.name.replace(/'/g, "''")}'\` (or \`region_code = '${scope.code || ""}'\`).`

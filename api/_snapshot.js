@@ -32,6 +32,7 @@ function esc(s) { return String(s).replace(/'/g, "''"); }
 function filterFor(scope) {
   const t = (scope.type || "").toLowerCase();
   if (t === "national") return "1=1";
+  if (t === "state") return `state_abbr = '${esc(scope.code || scope.name)}'`;
   if (scope.code) {
     const col = t === "division" ? "division_code" : t === "region" ? "region_code" : "chapter_code";
     return `${col} = '${esc(scope.code)}'`;

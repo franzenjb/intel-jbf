@@ -21,6 +21,11 @@ function buildWhere(scope) {
   if (!scope || !scope.type) return null;
   const t = scope.type.toLowerCase();
   if (t === "national") return "1=1";
+  if (t === "state") {
+    if (scope.code) return `state_abbr = '${esc(scope.code)}'`;
+    if (scope.name) return `state_abbr = '${esc(scope.name)}'`;
+    return null;
+  }
   if (t === "county") {
     if (scope.code) return `county_fips = '${esc(scope.code)}'`;
     if (scope.name) return `county_name = '${esc(scope.name)}'`;

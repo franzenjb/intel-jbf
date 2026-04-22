@@ -377,6 +377,7 @@
     <div class="scope-row">
       <div class="type-tabs" role="tablist">
         <button data-type="national" class="active">National</button>
+        <button data-type="state">State</button>
         <button data-type="division">Division</button>
         <button data-type="region">Region</button>
         <button data-type="chapter">Chapter</button>
@@ -921,6 +922,24 @@ async function drawScopeOutline(scope) {
     mapView.goTo({ center: [-96, 38], zoom: 4 }, { duration: 900 });
     return true;
   }
+  // State outline from Esri Living Atlas
+  if (scope.type === "state") {
+    const STATE_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_States_Generalized_Boundaries/FeatureServer/0";
+    const esc = (s) => String(s).replace(/'/g, "''");
+    const q = new Query({ where: `STATE_ABBR = '${esc(scope.code || scope.name)}'`, returnGeometry: true, outFields: ["STATE_ABBR","STATE_NAME"], outSpatialReference: { wkid: 102100 } });
+    try {
+      const result = await query.executeQueryJSON(STATE_URL, q);
+      if (!result.features.length) return false;
+      const sym = new SimpleFillSymbol({ color: [237, 27, 46, 0.08], outline: new SimpleLineSymbol({ color: [237, 27, 46, 0.95], width: 2.5 }) });
+      let fullExtent = null;
+      for (const f of result.features) {
+        outlineLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes }));
+        if (f.geometry.extent) fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
+      }
+      if (fullExtent) mapView.goTo(fullExtent.expand(1.1), { duration: 900, easing: "ease-in-out" });
+      return true;
+    } catch (e) { console.error("state outline failed", e); return false; }
+  }
   const ARC = "https://services.arcgis.com/pGfbNJoYypmNq86F/arcgis/rest/services/Master_ARC_Geography_2022/FeatureServer/";
   const layerByType = { division: "1", region: "2", chapter: "3" };
   const fieldByType = { division: "Division", region: "Region", chapter: "Chapter" };
@@ -1204,6 +1223,7 @@ function updateBreadcrumb(scope) {
 // ───── Dynamic suggestions ──────────────────────────────────────────────────
 const SUGGESTIONS = {
   national: ["Compare divisions by risk", "Which division has the worst fire service gaps?", "Where is ALICE highest nationally?", "What are the top 10 riskiest counties in the US?"],
+  state: ["What are the riskiest counties in this state?", "How does this state compare nationally?", "What is the ALICE situation here?", "What are the biggest natural hazards?"],
   division: ["What are the biggest risks here?", "Which regions need the most resources?", "How does this division compare nationally?", "What are the fire service gaps?"],
   region: ["What should we prepare for?", "Which chapters have the highest risk?", "How does this compare to the division?", "What's the ALICE situation here?"],
   chapter: ["What should we prepare for?", "What are the biggest risks?", "What's our fire response coverage?", "Tell me about the most vulnerable county"],

@@ -71,6 +71,18 @@ async function loadHierarchy() {
     dedupeChapters.push(c);
   }
 
+  // States
+  const stateRows = await sql(`
+    SELECT DISTINCT state_abbr
+    FROM county_rankings
+    WHERE state_abbr IS NOT NULL
+    ORDER BY state_abbr
+  `);
+  const states = stateRows.map(r => ({
+    name: r.state_abbr,
+    code: r.state_abbr,
+  }));
+
   // Counties for the county-level scope selector
   const countyRows = await sql(`
     SELECT DISTINCT county_fips, county_name, state_abbr, chapter, region, division
@@ -90,6 +102,7 @@ async function loadHierarchy() {
   }));
 
   return {
+    states,
     divisions: [...divisions.values()].sort((a, b) => a.name.localeCompare(b.name)),
     regions: [...regions.values()].sort((a, b) => a.name.localeCompare(b.name)),
     chapters: dedupeChapters.sort((a, b) => a.name.localeCompare(b.name)),
