@@ -193,17 +193,31 @@
   .top5-name .state { color: var(--muted); font-weight: 400; }
   .top5-val { font: 700 14px/1 ui-monospace,"SF Mono",Menlo,monospace; color: var(--amber); background: rgba(146,64,14,0.08); padding: 7px 14px; border-radius: 8px; min-width: 52px; text-align: center; }
 
-  /* ───── Chat ────────────────────────────────────────────────────────────── */
-  .chat-card { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-  .chat-card h3 { flex-shrink: 0; }
-  .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; flex-shrink: 0; }
-  .suggestion { background: var(--panel2); border: 1px solid var(--border); color: var(--fg2); border-radius: 20px; padding: 8px 16px; font: 500 13px/1.3 inherit; cursor: pointer; transition: all .15s; }
-  .suggestion:hover { border-color: var(--red); background: var(--red-dim); color: var(--fg); }
-  #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-  .msg { padding: 14px 18px; border-radius: 12px; line-height: 1.6; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; }
-  .msg.user { background: var(--red-dim); border: 1px solid rgba(237,27,46,0.12); align-self: flex-end; max-width: 88%; color: var(--fg); }
-  .msg.bot { background: var(--panel2); border: 1px solid var(--border); color: var(--fg2); }
-  .msg.bot.pending { color: var(--muted); font-style: italic; }
+  /* ───── Ask modal (full screen over map) ─────────────────────────────────── */
+  .ask-modal { position: fixed; inset: 0; z-index: 150; background: var(--bg); display: flex; flex-direction: column; }
+  .ask-modal[hidden] { display: none; }
+  .ask-header { display: flex; align-items: center; gap: 16px; padding: 20px 32px; border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  .ask-header h2 { font: 800 18px/1 inherit; color: var(--fg); flex: 1; }
+  .ask-header .scope-label { color: var(--muted); font: 600 13px/1 inherit; }
+  .ask-close { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font: 600 13px/1 inherit; color: var(--fg2); cursor: pointer; transition: all .15s; }
+  .ask-close:hover { border-color: var(--red); color: var(--red); }
+  .ask-body { flex: 1; overflow-y: auto; padding: 24px 32px; max-width: 900px; width: 100%; margin: 0 auto; }
+  .ask-body .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 16px; }
+  .ask-body .suggestion { background: var(--panel); border: 1px solid var(--border); color: var(--fg2); border-radius: 20px; padding: 10px 20px; font: 500 14px/1.3 inherit; cursor: pointer; transition: all .15s; }
+  .ask-body .suggestion:hover { border-color: var(--red); background: var(--red-dim); color: var(--fg); }
+  .ask-body .msg { padding: 18px 24px; border-radius: 14px; line-height: 1.7; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 8px; }
+  .ask-body .msg.user { background: var(--red-dim); border: 1px solid rgba(237,27,46,0.12); align-self: flex-end; max-width: 70%; color: var(--fg); margin-left: auto; }
+  .ask-body .msg.bot { background: var(--panel); border: 1px solid var(--border); color: var(--fg2); }
+  .ask-body .msg.bot.pending { color: var(--muted); font-style: italic; }
+  .ask-body #messages { display: flex; flex-direction: column; gap: 12px; }
+  .ask-footer { padding: 16px 32px; border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  .ask-footer form { display: flex; gap: 10px; max-width: 900px; margin: 0 auto; }
+  .ask-footer textarea { flex: 1; background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px; font: 15px/1.4 inherit; resize: none; min-height: 48px; max-height: 120px; }
+  .ask-footer textarea:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px var(--red-dim); }
+  .ask-footer button.send { background: var(--red); color: #fff; border: 0; border-radius: 12px; padding: 0 28px; font: 700 20px/1 inherit; cursor: pointer; transition: background .15s; }
+  .ask-footer button.send:hover { background: #d41628; }
+  .ask-footer button.send:disabled { opacity: 0.4; cursor: progress; }
+
   .msg code { background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: ui-monospace,"SF Mono",Menlo,monospace; }
   .msg pre { background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; overflow: auto; font-size: 14px; margin: 8px 0; border: 1px solid var(--border); }
   .msg strong { color: var(--fg); }
@@ -467,14 +481,9 @@
     </div>
 
     <div class="tab-panel" data-panel="ask" hidden>
-      <div class="card chat-card" id="chatSection" hidden>
-        <h3><span class="dot"></span>Ask Intel</h3>
-        <div class="suggestions" id="suggestions"></div>
-        <div id="messages"></div>
-        <form id="askForm">
-          <textarea id="q" placeholder="Ask about this area…" rows="1"></textarea>
-          <button class="send" type="submit" id="sendBtn">&rarr;</button>
-        </form>
+      <div style="text-align:center;padding:40px 20px;">
+        <p style="color:var(--fg2);font-size:15px;margin-bottom:16px;">Ask natural language questions powered by SQL + Knowledge Graph</p>
+        <button class="icon-btn" id="openAskBtn" style="background:var(--red);color:#fff;border-color:var(--red);padding:14px 32px;font-size:15px;border-radius:12px;">Open Ask Intel</button>
       </div>
     </div>
     <div class="tab-panel" data-panel="county" hidden style="padding:14px 16px;">
@@ -501,6 +510,24 @@
     </div>
     <div class="dimmer" id="dimmer"><div class="spinner"></div></div>
   </main>
+</div>
+
+<div class="ask-modal" id="askModal" hidden>
+  <div class="ask-header">
+    <h2>Ask Intel</h2>
+    <span class="scope-label" id="askScopeLabel"></span>
+    <button class="ask-close" id="askClose">Close</button>
+  </div>
+  <div class="ask-body">
+    <div class="suggestions" id="suggestions"></div>
+    <div id="messages"></div>
+  </div>
+  <div class="ask-footer">
+    <form id="askForm">
+      <textarea id="q" placeholder="Ask about this area…" rows="1"></textarea>
+      <button class="send" type="submit" id="sendBtn">&rarr;</button>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -616,6 +643,7 @@ let mapView, countyLayer, outlineLayer, arcgisMods = null;
 
 // ───── Tabs ──────────────────────────────────────────────────────────────────
 function showTab(name) {
+  if (name === "ask") { openAskModal(); return; }
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => { p.hidden = p.dataset.panel !== name; });
 }
@@ -636,6 +664,7 @@ async function bootstrap() {
   initShowAll();
   initRefreshBriefing();
   initHelp();
+  initAskModal();
   await initMap();
   initMapControls();
   // Default to national view
@@ -773,7 +802,6 @@ async function activateScope(scope) {
   updateBreadcrumb(scope);
   document.getElementById("briefingSection").hidden = false;
   document.getElementById("top5Section").hidden = false;
-  document.getElementById("chatSection").hidden = false;
   showTab("overview");
 
   // Fetch data + briefing + zoom in parallel — don't wait for choropleth
@@ -953,14 +981,21 @@ function renderTopCounties() {
   if (searchQ) allRows = allRows.filter(r => (r.county_name || "").toLowerCase().includes(searchQ) || (r.state_abbr || "").toLowerCase().includes(searchQ));
   allRows.sort((a, b) => b[activeMetric] - a[activeMetric]);
 
-  // Stats row
+  // Stats row — show both % and people count for hardship metrics
   const vals = allRows.map(r => Number(r[activeMetric])).filter(v => !isNaN(v));
   const statsEl = document.getElementById("statsRow");
   if (vals.length) {
     const mn = Math.min(...vals), mx = Math.max(...vals);
     const sorted = [...vals].sort((a,b) => a-b);
     const med = sorted[Math.floor(sorted.length/2)];
-    statsEl.innerHTML = `<span>Min: <span class="stat-val">${meta.fmt(mn)}</span></span><span>Median: <span class="stat-val">${meta.fmt(med)}</span></span><span>Max: <span class="stat-val">${meta.fmt(mx)}</span></span><span><span class="stat-val">${vals.length}</span> counties</span>`;
+    let extra = "";
+    if (["pct_alice","poverty_pct","pct_struggling"].includes(activeMetric)) {
+      const totalPop = allRows.reduce((s,r) => s + (r.population || 0), 0);
+      const totalPeople = allRows.reduce((s,r) => { const p = r[activeMetric]; return s + (p != null && r.population ? Math.round(r.population * p / 100) : 0); }, 0);
+      const avgPct = avg(allRows.map(r => r[activeMetric]));
+      extra = `<span><span class="stat-val">${fmtNum(totalPeople)}</span> people (${avgPct?.toFixed(1)}% avg)</span>`;
+    }
+    statsEl.innerHTML = `<span>Min: <span class="stat-val">${meta.fmt(mn)}</span></span><span>Median: <span class="stat-val">${meta.fmt(med)}</span></span><span>Max: <span class="stat-val">${meta.fmt(mx)}</span></span><span><span class="stat-val">${vals.length}</span> counties</span>${extra}`;
   } else { statsEl.innerHTML = ""; }
 
   const limit = showAllCounties || searchQ ? allRows.length : 10;
@@ -1079,6 +1114,22 @@ function updateSuggestions(scope) {
     btn.addEventListener("click", () => { document.getElementById("q").value = btn.textContent; document.getElementById("askForm").requestSubmit(); });
   });
   el.hidden = chatHistory.length > 0;
+}
+
+// ───── Ask modal ────────────────────────────────────────────────────────────
+function openAskModal() {
+  const modal = document.getElementById("askModal");
+  modal.hidden = false;
+  document.getElementById("askScopeLabel").textContent = activeScope ? `${activeScope.type.toUpperCase()}: ${activeScope.name}` : "";
+  updateSuggestions(activeScope);
+  renderChat();
+  document.getElementById("q").focus();
+}
+function closeAskModal() { document.getElementById("askModal").hidden = true; }
+function initAskModal() {
+  document.getElementById("askClose").addEventListener("click", closeAskModal);
+  document.getElementById("openAskBtn")?.addEventListener("click", openAskModal);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.getElementById("askModal").hidden) closeAskModal(); });
 }
 
 // ───── Chat ──────────────────────────────────────────────────────────────────
