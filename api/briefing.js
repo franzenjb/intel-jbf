@@ -58,8 +58,31 @@ function shortUsd(n) {
   return String(Math.round(n));
 }
 
-function buildSynthesisPrompt(snap) {
-  const s = snap;
+function buildNationalPrompt(s) {
+  const divLines = (s.division_summaries || []).map(d =>
+    `  ${d.division}: ${Number(d.counties)} counties, pop ${Number(d.population).toLocaleString()}, avg risk ${Number(d.avg_risk).toFixed(0)}, ${Number(d.avg_struggling).toFixed(1)}% struggling, $${shortUsd(Number(d.total_eal))} annual loss`
+  ).join("\n");
+  const fireGapLine = s.fire_gaps_cy2024 != null
+    ? `${s.fire_gaps_cy2024} structure fires in CY2024 with no Red Cross notification`
+    : "fire-response coverage data unavailable";
+  return `You are briefing the American Red Cross CEO and national leadership team. Write EXACTLY 3 punchy sentences about the national risk landscape. Focus on DIVISIONS — which face the greatest exposure, where economic fragility compounds disaster risk, and where the biggest operational dollar exposure sits. Do NOT name individual counties. No preamble. No markdown. No headers. Just 3 sentences that a national executive would act on.
+
+NATIONAL FACTS
+- Total counties: ${s.counties}
+- Total population: ${s.population.toLocaleString()}
+- Avg overall risk: ${s.avg_risk}
+- Avg % struggling (ALICE+poverty): ${s.avg_pct_struggling}%
+- Total expected annual loss: $${shortUsd(s.total_expected_annual_loss)}
+- Top hazard nationally: ${s.top_hazard?.label || "n/a"} (avg ${s.top_hazard?.avg || "n/a"}/100)
+- Fire-response gap: ${fireGapLine}
+
+DIVISION BREAKDOWN
+${divLines || "  (unavailable)"}
+
+Identify which 2-3 divisions carry the most risk or fragility and why. End with the single most actionable national pattern.`;
+}
+
+function buildScopePrompt(s) {
   const leaders = (s.top_hazard_leaders || []).map(h => `${h.name}, ${h.state} (${h.score})`).join("; ");
   const struggling = (s.top_struggling || []).map(h => `${h.name}, ${h.state} (${h.pct}%)`).join("; ");
   const topRisk = (s.top_risk || []).slice(0, 2).map(r => `${r.name}, ${r.state} (risk ${r.risk})`).join("; ");
@@ -71,10 +94,7 @@ function buildSynthesisPrompt(snap) {
   const riskDelta = p50Risk != null ? `${s.avg_risk > p50Risk ? "+" : ""}${Math.round(s.avg_risk - p50Risk)} vs US median` : "";
   const strugDelta = p50Strug != null ? `${s.avg_pct_struggling > p50Strug ? "+" : ""}${(s.avg_pct_struggling - p50Strug).toFixed(1)}pp vs US median` : "";
 
-  const roleLabel = s.scope.type === "national"
-    ? "a senior Red Cross national leadership team member overseeing the entire United States"
-    : `a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type})`;
-  return `You are briefing ${roleLabel}. Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+  return `You are briefing a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type}). Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
 
 SCOPE FACTS
 - Counties: ${s.counties}
@@ -89,6 +109,10 @@ SCOPE FACTS
 - Fire-response service gap: ${fireGapLine}
 
 Lead with the hazard or fragility angle that's most off-the-charts vs the US median. Name at least one specific county.`;
+}
+
+function buildSynthesisPrompt(snap) {
+  return snap.scope.type === "national" ? buildNationalPrompt(snap) : buildScopePrompt(snap);
 }
 
 async function liveSynthesize(scope) {

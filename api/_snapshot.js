@@ -157,8 +157,28 @@ export async function captureDataSnapshot(scope) {
     WHERE pct_struggling IS NOT NULL
   `);
 
+  // For national scope: division-level summaries
+  let divisionSummaries = null;
+  if ((scope.type || "").toLowerCase() === "national") {
+    try {
+      divisionSummaries = await sql(`
+        SELECT division,
+          COUNT(*) AS counties,
+          SUM(population) AS population,
+          AVG(risk_score) AS avg_risk,
+          AVG(pct_struggling) AS avg_struggling,
+          SUM(expected_annual_loss) AS total_eal
+        FROM county_rankings
+        WHERE division IS NOT NULL AND division <> 'Not Assigned'
+        GROUP BY division
+        ORDER BY SUM(expected_annual_loss) DESC NULLS LAST
+      `);
+    } catch (e) { divisionSummaries = null; }
+  }
+
   return {
     scope: { type: scope.type, name: scope.name, code: scope.code || null },
+    division_summaries: divisionSummaries,
     counties: Number(agg.counties) || 0,
     population: Number(agg.population) || 0,
     avg_pct_struggling: round1(agg.avg_pct_struggling),
