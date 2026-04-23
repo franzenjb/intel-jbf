@@ -1350,12 +1350,54 @@ function updateBreadcrumb(scope) {
 
 // ───── Dynamic suggestions ──────────────────────────────────────────────────
 const SUGGESTIONS = {
-  national: ["Compare divisions by risk score", "Which division has the worst fire service gaps?", "What are the top 10 ALICE counties by population?", "What are the top 10 riskiest counties in the US?"],
-  state: ["What are the top 5 riskiest counties in this state?", "How does this state compare to the national median?", "What is the ALICE rate and poverty rate here?", "What are the top natural hazards in this state?"],
-  division: ["What are the top 5 riskiest counties in this division?", "Which regions have the highest ALICE rates?", "How does this division compare to the national median?", "How many fire incidents had no Red Cross notification?"],
-  region: ["What are the top 5 riskiest counties in this region?", "Which chapters have the highest risk scores?", "What is the average ALICE rate in this region?", "What are the top hazards here?"],
-  chapter: ["What are the top hazards in this chapter?", "What is the ALICE rate across our counties?", "Which county has the highest risk score?", "How many fire incidents had no Red Cross notification?"],
-  county: ["What are the top hazards in this county?", "How does this county compare to the national median?", "What is the ALICE and poverty rate here?", "Tell me about this county's geography and economy"],
+  national: [
+    "Compare divisions by average risk score and population",
+    "Which 10 counties have the highest risk scores in the US?",
+    "Which division has the most people living in poverty?",
+    "How many structure fires had no Red Cross notification in 2024?",
+    "What are the top 5 counties by expected annual loss?",
+    "Which states have the highest ALICE rates?",
+  ],
+  state: [
+    "What are the top 5 riskiest counties in this state?",
+    "How many people are below the ALICE threshold here?",
+    "Which county has the highest expected annual loss?",
+    "How does this state's risk compare to the national median?",
+    "What are the dominant natural hazards here?",
+    "Which counties have high risk but small populations?",
+  ],
+  division: [
+    "Which regions in this division have the highest risk?",
+    "How many people are struggling (ALICE + poverty) across this division?",
+    "What are the top 10 riskiest counties here?",
+    "How does this division compare to the national median on risk and ALICE?",
+    "Which counties had the most fire incidents with no Red Cross notification?",
+    "What is the total expected annual loss across this division?",
+  ],
+  region: [
+    "Rank the chapters in this region by average risk score",
+    "Which county has the highest hurricane risk?",
+    "How many people live in counties above 80 risk score?",
+    "What is the poverty rate vs ALICE rate across our counties?",
+    "What are the top 3 hazards by expected annual loss?",
+    "Tell me about the most economically fragile county here",
+  ],
+  chapter: [
+    "What are the top hazards across our counties?",
+    "Which county has the most people below the ALICE threshold?",
+    "How does our average risk compare to the national median?",
+    "How many structure fires had no Red Cross notification in 2024?",
+    "What is the total expected annual loss across our chapter?",
+    "Which county is most vulnerable and why?",
+  ],
+  county: [
+    "What are the top natural hazards in this county?",
+    "How does this county's risk compare to the national median?",
+    "What is the ALICE rate and poverty rate here?",
+    "What is the expected annual loss for this county?",
+    "Tell me about this county's geography and economy",
+    "What disaster declarations has this county had?",
+  ],
 };
 function updateSuggestions(scope) {
   const el = document.getElementById("suggestions");
