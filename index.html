@@ -279,6 +279,8 @@
     font-feature-settings: "tnum" 1;
   }
   .kpi-sub { font: 500 13px/1.4 var(--body); color: var(--fg); margin-top: 10px; font-feature-settings: "tnum" 1; }
+  .kpi-flag { display: inline-block; margin-left: 6px; color: var(--fg2); font-size: 11px; cursor: help; vertical-align: 1px; }
+  .kpi-footnote { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border); font: 500 11px/1.45 var(--body); color: var(--fg2); letter-spacing: 0.01em; }
   .kpi-haz-rest { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
   .kpi-haz-rest:empty { display: none; }
   .kpi-haz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
@@ -928,10 +930,11 @@
           <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Top Hazards</div>
+          <div class="kpi-label">Top Hazards <span class="kpi-flag" title="Methodology note">&#9432;</span></div>
           <div class="kpi-value" id="kpiHazard">&mdash;</div>
           <div class="kpi-sub" id="kpiHazardVal">&nbsp;</div>
           <div class="kpi-haz-rest" id="kpiHazardRest"></div>
+          <div class="kpi-footnote">Ranked by FEMA NRI composite score, not dollar loss or declaration history. NRI systematically underweights wildfire in populous counties &mdash; treat as directional only. Switching to FEMA disaster-declaration counts is on the roadmap.</div>
         </div>
         <div class="kpi-card full-width">
           <div class="kpi-label">Est. Annual Loss</div>
