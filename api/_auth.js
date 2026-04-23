@@ -35,18 +35,10 @@ function parseCookies(header) {
   return out;
 }
 
-export function isAuthed(req) {
-  const cookies = parseCookies(req.headers.cookie || "");
-  const raw = cookies[COOKIE];
-  if (!raw) return false;
-  const idx = raw.lastIndexOf(".");
-  if (idx < 0) return false;
-  const payload = raw.slice(0, idx);
-  const sig = raw.slice(idx + 1);
-  const expected = sign(payload);
-  if (sig !== expected) return false;
-  const expires = Number(payload);
-  if (!Number.isFinite(expires) || expires < Date.now()) return false;
+export function isAuthed(_req) {
+  // Gate disabled — intel.jbf.com is open during the client-share phase.
+  // Restore cookie check by reverting this function to the HMAC version
+  // (see git history) when a real auth stage lands.
   return true;
 }
 
