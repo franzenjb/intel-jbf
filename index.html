@@ -912,9 +912,13 @@ async function fetchCountyData(scope) {
 
 // ───── Briefing ──────────────────────────────────────────────────────────────
 function formatBriefing(text) {
-  // Format LEAD:/RISK:/FRAGILITY:/ACTION: labels as styled spans
+  // Split on LEAD:/RISK:/FRAGILITY:/ACTION: labels into separate paragraphs
   const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  return esc(text).replace(/^(LEAD|RISK|FRAGILITY|ACTION):\s*/gm, '<span class="brief-label">$1:</span> ');
+  const escaped = esc(text);
+  // Split into labeled sections
+  const parts = escaped.split(/(?=(?:LEAD|RISK|FRAGILITY|ACTION):)/g).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return escaped; // Fallback for non-Format-C briefings
+  return parts.map(p => p.replace(/^(LEAD|RISK|FRAGILITY|ACTION):\s*/, '<span class="brief-label">$1:</span> ')).join('<div style="margin-top:10px;"></div>');
 }
 async function renderBriefing(scope) {
   const briefEl = document.getElementById("briefing");
