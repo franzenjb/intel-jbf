@@ -19,7 +19,7 @@ import { captureDataSnapshot } from "./_snapshot.js";
 const CACHE_PATH = resolve(process.cwd(), "data", "scope-briefings.json");
 
 const MODEL = "claude-sonnet-4-5-20250929";
-const PROMPT_VERSION = "v2-2026-04-22";
+const PROMPT_VERSION = "v3-2026-04-23";
 
 let _cache = null;
 let _cacheLoadedAt = 0;
@@ -60,26 +60,31 @@ function shortUsd(n) {
 
 function buildNationalPrompt(s) {
   const divLines = (s.division_summaries || []).map(d =>
-    `  ${d.division}: ${Number(d.counties)} counties, pop ${Number(d.population).toLocaleString()}, avg risk ${Number(d.avg_risk).toFixed(0)}, ${Number(d.avg_struggling).toFixed(1)}% struggling, $${shortUsd(Number(d.total_eal))} annual loss`
+    `  ${d.division}: ${(d.population || 0).toLocaleString()} pop, avg risk ${Math.round(d.avg_risk || 0)}, ${Math.round(d.avg_struggling || 0)}% struggling, $${shortUsd(d.total_eal)} annual loss`
   ).join("\n");
   const fireGapLine = s.fire_gaps_cy2024 != null
     ? `${s.fire_gaps_cy2024} structure fires in CY2024 with no Red Cross notification`
     : "fire-response coverage data unavailable";
-  return `You are briefing the American Red Cross CEO and national leadership team. Write EXACTLY 3 punchy sentences about the national risk landscape. Focus on DIVISIONS — which face the greatest exposure, where economic fragility compounds disaster risk, and where the biggest operational dollar exposure sits. Do NOT name individual counties. No preamble. No markdown. No headers. Just 3 sentences that a national executive would act on.
+  const strugPeople = Math.round(s.population * (s.avg_pct_struggling || 0) / 100);
+  return `You are briefing the CEO of the American Red Cross on the national risk landscape.
 
-NATIONAL FACTS
-- Total counties: ${s.counties}
-- Total population: ${s.population.toLocaleString()}
+SCOPE FACTS
+- Counties: ${s.counties}
+- Population: ${s.population.toLocaleString()}
 - Avg overall risk: ${s.avg_risk}
 - Avg % struggling (ALICE+poverty): ${s.avg_pct_struggling}%
+- Struggling people: ~${strugPeople.toLocaleString()}
 - Total expected annual loss: $${shortUsd(s.total_expected_annual_loss)}
 - Top hazard nationally: ${s.top_hazard?.label || "n/a"} (avg ${s.top_hazard?.avg || "n/a"}/100)
 - Fire-response gap: ${fireGapLine}
+${divLines ? `\nDIVISION BREAKDOWN\n${divLines}` : ""}
 
-DIVISION BREAKDOWN
-${divLines || "  (unavailable)"}
+Write in this exact 4-line format — no other text, no markdown:
 
-Identify which 2-3 divisions carry the most risk or fragility and why. End with the single most actionable national pattern.`;
+LEAD: One sentence naming the #1 threat and most exposed county.
+RISK: One sentence on overall risk posture vs national median with numbers.
+FRAGILITY: One sentence on economic vulnerability (ALICE + poverty — both % and people count).
+ACTION: One sentence on the single most important preparedness priority.`;
 }
 
 function buildScopePrompt(s) {
@@ -93,14 +98,20 @@ function buildScopePrompt(s) {
   const p50Strug = s.national?.p50_struggling;
   const riskDelta = p50Risk != null ? `${s.avg_risk > p50Risk ? "+" : ""}${Math.round(s.avg_risk - p50Risk)} vs US median` : "";
   const strugDelta = p50Strug != null ? `${s.avg_pct_struggling > p50Strug ? "+" : ""}${(s.avg_pct_struggling - p50Strug).toFixed(1)}pp vs US median` : "";
+  const strugPeople = Math.round(s.population * (s.avg_pct_struggling || 0) / 100);
 
-  return `You are briefing a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type}). Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+  const scopeLabel = s.scope.type === "state"
+    ? `a Red Cross state lead for ${s.scope.name}`
+    : `the executive director of the ${s.scope.name} (Red Cross ${s.scope.type})`;
+
+  return `You are briefing ${scopeLabel}.
 
 SCOPE FACTS
 - Counties: ${s.counties}
 - Population: ${s.population.toLocaleString()}
-- Avg overall risk: ${s.avg_risk} (${riskDelta})
-- Avg % struggling (ALICE+poverty): ${s.avg_pct_struggling}% (${strugDelta})
+- Avg overall risk: ${s.avg_risk}${riskDelta ? ` (${riskDelta})` : ""}
+- Avg % struggling (ALICE+poverty): ${s.avg_pct_struggling}%${strugDelta ? ` (${strugDelta})` : ""}
+- Struggling people: ~${strugPeople.toLocaleString()}
 - Total expected annual loss: $${shortUsd(s.total_expected_annual_loss)}
 - Top hazard across scope: ${s.top_hazard?.label || "n/a"} (avg ${s.top_hazard?.avg || "n/a"}/100)
 - Worst-hit counties on top hazard: ${leaders || "n/a"}
@@ -108,7 +119,12 @@ SCOPE FACTS
 - Most economically fragile counties: ${struggling || "n/a"}
 - Fire-response service gap: ${fireGapLine}
 
-Lead with the hazard or fragility angle that's most off-the-charts vs the US median. Name at least one specific county.`;
+Write in this exact 4-line format — no other text, no markdown:
+
+LEAD: One sentence naming the #1 threat and most exposed county.
+RISK: One sentence on overall risk posture vs national median with numbers.
+FRAGILITY: One sentence on economic vulnerability (ALICE + poverty — both % and people count).
+ACTION: One sentence on the single most important preparedness priority.`;
 }
 
 function buildSynthesisPrompt(snap) {

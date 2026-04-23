@@ -19,7 +19,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const OUT = resolve(ROOT, "data", "scope-briefings.json");
 
-const PROMPT_VERSION = "v2-2026-04-22";
+const PROMPT_VERSION = "v3-2026-04-23";
 const MODEL = "claude-sonnet-4-5-20250929";
 
 const args = Object.fromEntries(
@@ -58,31 +58,41 @@ function buildSynthesisPrompt(snap) {
 - Most economically fragile counties: ${struggling || "n/a"}
 - Fire-response service gap: ${fireGapLine}`;
 
+  const strugPeople = Math.round(s.population * (s.avg_pct_struggling || 0) / 100);
+  const factsPlus = facts + `\n- Struggling people: ~${strugPeople.toLocaleString()}`;
+
+  const structuredFormat = `Write in this exact 4-line format — no other text, no markdown:
+
+LEAD: One sentence naming the #1 threat and most exposed county.
+RISK: One sentence on overall risk posture vs national median with numbers.
+FRAGILITY: One sentence on economic vulnerability (ALICE + poverty — both % and people count).
+ACTION: One sentence on the single most important preparedness priority.`;
+
   if (scopeType === "national") {
     const divLines = (s.division_summaries || []).map(d =>
       `  ${d.division}: ${(d.population || 0).toLocaleString()} pop, avg risk ${Math.round(d.avg_risk || 0)}, ${Math.round(d.avg_struggling || 0)}% struggling, $${shortUsd(d.total_eal)} annual loss`
     ).join("\n");
-    return `You are briefing the CEO of the American Red Cross. Write EXACTLY 2 punchy sentences summarizing the most urgent national risk landscape. Name the highest-risk division and one specific county. No preamble. No markdown. No headers. Just 2 sentences.
+    return `You are briefing the CEO of the American Red Cross on the national risk landscape.
 
-${facts}
+${factsPlus}
 ${divLines ? `\nDIVISION BREAKDOWN\n${divLines}` : ""}
 
-Lead with the single biggest story — which division or region concentrates the most risk or economic fragility, and what hazard drives it.`;
+${structuredFormat}`;
   }
 
   if (scopeType === "state") {
-    return `You are briefing a Red Cross state lead for **${s.scope.name}**. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+    return `You are briefing a Red Cross state lead for ${s.scope.name}.
 
-${facts}
+${factsPlus}
 
-Lead with the hazard or fragility angle that's most off-the-charts vs the US median. Name at least one specific county.`;
+${structuredFormat}`;
   }
 
-  return `You are briefing a newly appointed executive director of the **${s.scope.name}** (Red Cross ${s.scope.type}). Below is everything you know about their territory. Write EXACTLY 2 punchy sentences naming the single most urgent exposure and one specific county. No preamble. No markdown. No headers. Just 2 sentences, second sentence can add a concentration or economic angle.
+  return `You are briefing the executive director of the ${s.scope.name} (Red Cross ${s.scope.type}).
 
-${facts}
+${factsPlus}
 
-Lead with the hazard or fragility angle that's most off-the-charts vs the US median. Name at least one specific county.`;
+${structuredFormat}`;
 }
 
 function shortUsd(n) {

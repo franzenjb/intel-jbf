@@ -20,7 +20,7 @@ const OUT = resolve(ROOT, "data", "county-narratives.json");
 
 const LIGHTRAG_URL = process.env.LIGHTRAG_URL || "https://explorer.jbf.com/api/lightrag";
 const MODEL = "claude-haiku-4-5-20251001";
-const PROMPT_VERSION = "v1-2026-04-22";
+const PROMPT_VERSION = "v2-2026-04-23";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://qoskpyfgimjcmmxunfji.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
@@ -61,7 +61,13 @@ async function queryLightRAG(question) {
 }
 
 async function synthesize(countyName, stateAbbr, ragContext) {
-  const prompt = `Write a 100-150 word narrative about ${countyName}, ${stateAbbr}. Cover geography, economy, demographics, and any notable disaster history or community features. Write plain prose — no bullet points, no headers, no markdown. Be specific and factual.
+  const prompt = `Write about ${countyName} County, ${stateAbbr} in exactly 3 short paragraphs (total 120-160 words):
+
+Paragraph 1: Geography and location — where it is, terrain, key features.
+Paragraph 2: Economy and people — population character, industries, ALICE/poverty if known.
+Paragraph 3: Disaster profile — historical events, primary hazard exposures, community resilience factors.
+
+Plain prose, no headers, no markdown, no bullet points.
 
 CONTEXT FROM KNOWLEDGE GRAPH:
 ${(ragContext || "No additional context available.").slice(0, 3000)}`;
