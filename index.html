@@ -1456,6 +1456,8 @@ async function drawScopeOutline(scope) {
   outlineLayer.removeAll();
   if (scope.type === "national") {
     mapView.goTo({ center: [-96, 39], zoom: 3.8 }, { duration: 900 });
+    // Overlay 48 state boundaries by default so geography is readable on load
+    previewScopeOutlines("state");
     return true;
   }
   // State outline from Esri Living Atlas
