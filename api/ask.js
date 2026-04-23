@@ -16,6 +16,8 @@ function scopePrefix(scope) {
       ? `You are advising leadership of the **${scope.name}** (a Red Cross division). All answers must be scoped to counties within this division. When you run supabase_sql, always filter with \`division = '${scope.name.replace(/'/g, "''")}'\` (or \`division_code = '${scope.code || ""}'\`). Cite the division in your framing.`
       : kind === "region"
       ? `You are advising leadership of the **${scope.name}** (a Red Cross region${scope.division ? ` within the ${scope.division}` : ""}). All answers must be scoped to counties within this region. When you run supabase_sql, always filter with \`region = '${scope.name.replace(/'/g, "''")}'\` (or \`region_code = '${scope.code || ""}'\`).`
+      : kind === "county"
+      ? `You are answering a question about **${scope.name}** (FIPS ${scope.code || ""}). This is a single county. When you run supabase_sql, filter with \`county_fips = '${(scope.code || "").replace(/'/g, "''")}'\`. Give specific data for this one county only.`
       : `You are advising leadership of the **${scope.name}** (a Red Cross chapter${scope.region ? ` in the ${scope.region}` : ""}). All answers must be scoped to counties within this chapter. When you run supabase_sql, always filter with \`chapter = '${scope.name.replace(/'/g, "''")}'\` (or \`chapter_code = '${scope.code || ""}'\`).`;
   return `${header}\n\n---\n\n`;
 }
@@ -52,12 +54,16 @@ export default async function handler(req, res) {
   }
 
   const scoped = scopePrefix(scope) + question;
+  // For LightRAG, include scope context so it knows what area to search
+  const ragQuestion = scope?.name && scope.type !== "national"
+    ? `${question} (regarding ${scope.name})`
+    : question;
 
   try {
     // Fan out: smart-query (SQL data) + LightRAG (knowledge graph) in parallel
     const [sqlAnswer, ragContext] = await Promise.all([
       querySmartQuery(scoped),
-      queryLightRAG(question).catch(() => null),
+      queryLightRAG(ragQuestion).catch(() => null),
     ]);
 
     // Build unified answer with source indicators
