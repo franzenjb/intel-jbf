@@ -1284,7 +1284,7 @@ async function initMap() {
   countyLayer = new GraphicsLayer({ id: "counties" });
   outlineLayer = new GraphicsLayer({ id: "outline" });
   map.addMany([countyLayer, outlineLayer]);
-  mapView = new MapView({ container: "map", map, extent: { xmin: -125, ymin: 24, xmax: -66, ymax: 50, spatialReference: { wkid: 4326 } }, constraints: { snapToZoom: false }, ui: { components: ["zoom", "compass"] } });
+  mapView = new MapView({ container: "map", map, center: [-96, 39], zoom: 3.8, constraints: { snapToZoom: false }, ui: { components: ["zoom", "compass"] } });
   mapView.on("pointer-move", () => {});
   mapView.popup.defaultPopupTemplateEnabled = false;
   mapView.popup.autoOpenEnabled = false;
@@ -1406,8 +1406,7 @@ async function drawScopeOutline(scope) {
   const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
   outlineLayer.removeAll();
   if (scope.type === "national") {
-    // Fit to CONUS extent (xmin/ymin/xmax/ymax in WGS84) so all 48 states always visible regardless of viewport aspect
-    mapView.goTo({ target: { xmin: -125, ymin: 24, xmax: -66, ymax: 50, spatialReference: { wkid: 4326 } } }, { duration: 900 });
+    mapView.goTo({ center: [-96, 39], zoom: 3.8 }, { duration: 900 });
     return true;
   }
   // State outline from Esri Living Atlas
