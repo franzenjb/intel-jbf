@@ -249,7 +249,7 @@
 
   /* ───── KPI bento (gapless) ───────────────────────────────────────────── */
   .kpi-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
     border-top: 1px solid var(--border);
   }
   .kpi-card {
@@ -260,11 +260,10 @@
     position: relative;
     min-width: 0;
   }
-  .kpi-grid .kpi-card:nth-child(4n) { border-right: 0; }
+  .kpi-grid .kpi-card:nth-child(3n) { border-right: 0; }
   .kpi-card:nth-child(1) { animation-delay: 60ms; }
   .kpi-card:nth-child(2) { animation-delay: 120ms; }
   .kpi-card:nth-child(3) { animation-delay: 180ms; }
-  .kpi-card:nth-child(4) { animation-delay: 240ms; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
   .kpi-label {
@@ -822,9 +821,8 @@
     .combo input { width: 200px; }
     .scope-row { gap: 6px; }
     .type-tabs button { padding: 6px 10px; font-size: 11px; }
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
-    .kpi-grid .kpi-card:nth-child(4n) { border-right: 1px solid var(--border); }
-    .kpi-grid .kpi-card:nth-child(2n) { border-right: 0; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .kpi-grid .kpi-card { border-right: 0; }
     .kpi-value { font-size: 28px; }
     .scope-name-display { font-size: 24px; }
   }
@@ -930,11 +928,6 @@
           <div class="kpi-label">Average Risk Score</div>
           <div class="kpi-value" id="kpiRisk">&mdash;</div>
           <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Est. Annual Loss</div>
-          <div class="kpi-value" id="kpiEAL">&mdash;</div>
-          <div class="kpi-sub" id="kpiEALSub">across scope</div>
         </div>
       </div>
       <div id="divisionTable" hidden></div>
@@ -1758,7 +1751,7 @@ function zoomToFips(fips) {
 }
 
 // ───── KPI ───────────────────────────────────────────────────────────────────
-const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub" id="kpiEALSub">across scope</div></div>`;
+const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div>`;
 
 function updateKPIs() {
   if (!countyData) return;
@@ -1813,15 +1806,10 @@ function updateKPIs() {
   const popTotal = rows.reduce((s, r) => s + (r.population || 0), 0);
   const riskAvg = avg(rows.map(r => r.risk_score));
   const struggAvg = avg(rows.map(r => r.pct_struggling));
-  const ealSum = rows.reduce((s, r) => s + (r.expected_annual_loss || 0), 0);
   document.getElementById("kpiCounties").textContent = rows.length;
   document.getElementById("kpiPopulation").textContent = popTotal ? `${fmtNum(popTotal)} people` : "";
   document.getElementById("kpiRisk").textContent = riskAvg != null ? riskAvg.toFixed(0) : "—";
   document.getElementById("kpiStruggling").textContent = struggAvg != null ? struggAvg.toFixed(1) + "%" : "—";
-  document.getElementById("kpiEAL").textContent = "$" + shortNum(ealSum);
-  // Per-capita EAL
-  const ealSubEl = document.getElementById("kpiEALSub");
-  if (ealSubEl && popTotal > 0) { ealSubEl.textContent = `$${fmtNum(Math.round(ealSum / popTotal))} per capita · ${fmtNum(popTotal)} people`; }
   // Struggling: always show absolute people count
   const nat = countyData.national || {};
   const struggPeople = rows.reduce((s, r) => s + (r.pct_struggling != null && r.population ? Math.round(r.population * r.pct_struggling / 100) : 0), 0);
@@ -1832,8 +1820,14 @@ function updateKPIs() {
   } else {
     strugSub.textContent = `${fmtNum(struggPeople)} people`;
   }
-  // Risk: keep vs median comparison
-  if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
+  // Risk: vs-median comparison only meaningful for sub-national scopes
+  const riskSub = document.getElementById("kpiRiskPctl");
+  if (!isNat && riskAvg != null && nat.p50_risk != null) {
+    const d = riskAvg - nat.p50_risk;
+    riskSub.textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`;
+  } else {
+    riskSub.innerHTML = "&nbsp;";
+  }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
 
