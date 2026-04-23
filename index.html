@@ -1205,6 +1205,55 @@ function onScopeTypeChange() {
   scopeInput.value = "";
   scopeInput.placeholder = `Search ${scopeList.length} ${t === "county" ? "counties" : t + (scopeList.length === 1 ? "" : "s")}…`;
   hidePanel();
+  previewScopeOutlines(t);
+}
+
+// Draw boundary overlay for all entities at the clicked scope level (state/division/region/chapter/county)
+async function previewScopeOutlines(type) {
+  if (!arcgisMods || !outlineLayer) return;
+  outlineLayer.removeAll();
+  if (type === "county") return; // counties are already drawn by choropleth
+
+  const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query, geometryEngine } = arcgisMods;
+  const sym = new SimpleFillSymbol({
+    color: [237, 27, 46, 0.04],
+    outline: new SimpleLineSymbol({ color: [237, 27, 46, 0.85], width: 2 })
+  });
+
+  if (type === "state") {
+    const STATE_URL = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_States_Generalized_Boundaries/FeatureServer/0";
+    try {
+      const q = new Query({ where: "STATE_ABBR NOT IN ('AK','HI','PR','GU','VI','AS','MP')", returnGeometry: true, outFields: ["STATE_ABBR","STATE_NAME"], outSpatialReference: { wkid: 102100 } });
+      const result = await query.executeQueryJSON(STATE_URL, q);
+      for (const f of result.features) {
+        outlineLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes }));
+      }
+    } catch (e) { console.error("state overlay failed", e); }
+    return;
+  }
+
+  // Division / Region / Chapter: client-side dissolve of county polygons by field
+  if (!countyData || !countyLayer || countyLayer.graphics.length === 0) return;
+  const field = type; // "division" | "region" | "chapter"
+  const fipsToRow = new Map();
+  (countyData.rows || []).forEach(r => fipsToRow.set(String(r.county_fips).padStart(5, "0"), r));
+
+  const groups = new Map();
+  countyLayer.graphics.forEach(g => {
+    const fips = String(g.attributes.county_fips).padStart(5, "0");
+    const row = fipsToRow.get(fips);
+    if (!row || !row[field] || row[field] === "Not Assigned") return;
+    const key = row[field];
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(g.geometry);
+  });
+
+  for (const [name, geoms] of groups) {
+    try {
+      const dissolved = geometryEngine.union(geoms);
+      if (dissolved) outlineLayer.add(new Graphic({ geometry: dissolved, symbol: sym, attributes: { name } }));
+    } catch (e) { /* skip bad unions */ }
+  }
 }
 function renderPanel(q) {
   const qq = (q || "").trim().toLowerCase();
@@ -1326,7 +1375,7 @@ function initMapControls() {
 function loadArcGIS() {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script"); script.src = "https://js.arcgis.com/4.32/";
-    script.onload = () => { require(["esri/Map","esri/views/MapView","esri/layers/GraphicsLayer","esri/layers/FeatureLayer","esri/Graphic","esri/geometry/Polygon","esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol","esri/rest/query","esri/rest/support/Query"], (Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query) => { resolve({ Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query }); }); };
+    script.onload = () => { require(["esri/Map","esri/views/MapView","esri/layers/GraphicsLayer","esri/layers/FeatureLayer","esri/Graphic","esri/geometry/Polygon","esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol","esri/rest/query","esri/rest/support/Query","esri/geometry/geometryEngine"], (Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query, geometryEngine) => { resolve({ Map, MapView, GraphicsLayer, FeatureLayer, Graphic, Polygon, SimpleFillSymbol, SimpleLineSymbol, query, Query, geometryEngine }); }); };
     script.onerror = reject; document.head.appendChild(script);
   });
 }
