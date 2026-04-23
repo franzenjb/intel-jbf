@@ -1367,6 +1367,8 @@ async function initMap() {
     if (result) showCountyDetail(result.graphic.attributes);
   });
   window._mapView = mapView;
+  // Draw the 48 state outlines immediately so the default view is never empty
+  try { await mapView.when(); previewScopeOutlines("state"); } catch (_) {}
 }
 function buildBasemapGrid() {
   const grid = document.getElementById("bmGrid"); grid.innerHTML = "";
