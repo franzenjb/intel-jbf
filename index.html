@@ -1879,8 +1879,6 @@ async function loadFemaDeclarations(scope, rows) {
   if (scope?.type === "county") { section.hidden = true; return; }
   const states = [...new Set((rows || []).map(r => r.state_abbr).filter(Boolean))].sort();
   if (!states.length) { section.hidden = true; return; }
-  // Too many states (national) — skip, would be dominated by TX/CA and uninformative
-  if (states.length > 12) { section.hidden = true; return; }
 
   section.hidden = false;
   const content = document.getElementById("femaDeclContent");

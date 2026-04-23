@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     `${BASE}?$filter=${encodeURIComponent(filter)}` +
     `&$select=${encodeURIComponent(select)}` +
     `&$orderby=declarationDate desc` +
-    `&$top=5000`;
+    `&$top=10000`;
 
   try {
     const r = await fetch(url, { headers: { "User-Agent": "intel.jbf.com (Red Cross)" } });
