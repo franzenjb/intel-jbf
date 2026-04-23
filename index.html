@@ -1137,14 +1137,15 @@ async function fetchCountyNarrative(countyName, stateAbbr, fips) {
   if (!el) return;
   const cacheKey = `intel:narrative:${fips}`;
   const cached = localStorage.getItem(cacheKey);
-  if (cached) { el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.textContent = cached; return; }
+  const renderNarrative = (t) => { el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.innerHTML = t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n\n+/g, "<br><br>"); };
+  if (cached) { renderNarrative(cached); return; }
   try {
     const u = new URLSearchParams({ fips, name: countyName, state: stateAbbr });
     const r = await fetch(`/api/narrative?${u}`);
     const j = await r.json();
     const text = (j.narrative || "").replace(/\*\*/g, "").trim();
     if (text && text.length > 20) {
-      el.style.fontStyle = "normal"; el.style.color = "var(--fg2)"; el.textContent = text;
+      renderNarrative(text);
       localStorage.setItem(cacheKey, text);
     } else {
       el.textContent = "Narrative unavailable for this county.";
