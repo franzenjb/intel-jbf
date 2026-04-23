@@ -249,7 +249,7 @@
 
   /* ───── KPI bento (gapless) ───────────────────────────────────────────── */
   .kpi-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
     border-top: 1px solid var(--border);
   }
   .kpi-card {
@@ -258,16 +258,14 @@
     padding: 16px 20px;
     opacity: 0; animation: cardIn 500ms var(--ease-out) forwards;
     position: relative;
+    min-width: 0;
   }
-  .kpi-grid .kpi-card:nth-child(2n) { border-right: 0; }
+  .kpi-grid .kpi-card:nth-child(4n) { border-right: 0; }
   .kpi-card:nth-child(1) { animation-delay: 60ms; }
   .kpi-card:nth-child(2) { animation-delay: 120ms; }
   .kpi-card:nth-child(3) { animation-delay: 180ms; }
   .kpi-card:nth-child(4) { animation-delay: 240ms; }
-  .kpi-card:nth-child(5) { animation-delay: 300ms; }
-  .kpi-card:nth-child(6) { animation-delay: 360ms; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-  .kpi-card.full-width { grid-column: 1 / -1; border-right: 0; }
 
   .kpi-label {
     font: 600 10px/1 var(--body); color: var(--fg2);
@@ -279,7 +277,6 @@
     font-feature-settings: "tnum" 1;
   }
   .kpi-sub { font: 500 12px/1.35 var(--body); color: var(--fg); margin-top: 6px; font-feature-settings: "tnum" 1; }
-  .kpi-flag { display: inline-block; margin-left: 6px; color: var(--fg2); font-size: 11px; cursor: help; vertical-align: 1px; }
   .card-sub { font: 500 12px/1 var(--body); color: var(--fg2); letter-spacing: 0.02em; margin-left: 10px; text-transform: none; }
   .fema-list { display: flex; flex-direction: column; }
   .fema-row { display: grid; grid-template-columns: minmax(0, 120px) minmax(0, 1fr) minmax(0, 48px); gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); min-width: 0; }
@@ -290,12 +287,6 @@
   .fema-count { font: 700 14px/1 var(--display); color: var(--fg); text-align: right; font-feature-settings: "tnum" 1; letter-spacing: -0.02em; }
   .fema-footnote { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font: 500 10.5px/1.45 var(--body); color: var(--fg2); }
   [data-theme="light"] .fema-bar { background: rgba(0,0,0,0.06); }
-  .kpi-footnote { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); font: 500 10.5px/1.35 var(--body); color: var(--fg2); letter-spacing: 0.01em; }
-  .kpi-haz-rest { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
-  .kpi-haz-rest:empty { display: none; }
-  .kpi-haz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .kpi-haz-row .name { font: 600 11px/1.2 var(--body); color: var(--fg); letter-spacing: 0.02em; }
-  .kpi-haz-row .stat { font: 500 11px/1.2 var(--body); color: var(--fg2); font-feature-settings: "tnum" 1; white-space: nowrap; }
 
   /* ───── Cards ─────────────────────────────────────────────────────────── */
   .card {
@@ -832,6 +823,8 @@
     .scope-row { gap: 6px; }
     .type-tabs button { padding: 6px 10px; font-size: 11px; }
     .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .kpi-grid .kpi-card:nth-child(4n) { border-right: 1px solid var(--border); }
+    .kpi-grid .kpi-card:nth-child(2n) { border-right: 0; }
     .kpi-value { font-size: 28px; }
     .scope-name-display { font-size: 24px; }
   }
@@ -839,7 +832,6 @@
     header#top { padding: 0 14px; gap: 10px; }
     .combo input { width: 140px; font-size: 13px; }
     .kpi-grid { grid-template-columns: 1fr; }
-    .kpi-card.full-width { grid-column: 1; }
     .kpi-grid .kpi-card { border-right: 0; }
   }
 
@@ -940,13 +932,6 @@
           <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Top Hazards <span class="kpi-flag" title="Ranked by FEMA NRI composite score, not dollar loss or declaration history. NRI underweights wildfire in populous counties — treat as directional only. See FEMA Declarations below for ground-truth history.">&#9432;</span></div>
-          <div class="kpi-value" id="kpiHazard">&mdash;</div>
-          <div class="kpi-sub" id="kpiHazardVal">&nbsp;</div>
-          <div class="kpi-haz-rest" id="kpiHazardRest"></div>
-          <div class="kpi-footnote">NRI composite score &mdash; not dollar loss. See FEMA Declarations below for history.</div>
-        </div>
-        <div class="kpi-card full-width">
           <div class="kpi-label">Est. Annual Loss</div>
           <div class="kpi-value" id="kpiEAL">&mdash;</div>
           <div class="kpi-sub" id="kpiEALSub">across scope</div>
@@ -1773,7 +1758,7 @@ function zoomToFips(fips) {
 }
 
 // ───── KPI ───────────────────────────────────────────────────────────────────
-const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Top Hazard</div><div class="kpi-value" id="kpiHazard">&mdash;</div><div class="kpi-sub" id="kpiHazardVal">&nbsp;</div></div><div class="kpi-card full-width"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub" id="kpiEALSub">across scope</div></div>`;
+const KPI_DEFAULT_HTML = `<div class="kpi-card"><div class="kpi-label">Households Struggling</div><div class="kpi-value" id="kpiStruggling">&mdash;</div><div class="kpi-sub" id="kpiStrugglingPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Counties Covered</div><div class="kpi-value" id="kpiCounties">&mdash;</div><div class="kpi-sub" id="kpiPopulation">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Average Risk Score</div><div class="kpi-value" id="kpiRisk">&mdash;</div><div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div></div><div class="kpi-card"><div class="kpi-label">Est. Annual Loss</div><div class="kpi-value" id="kpiEAL">&mdash;</div><div class="kpi-sub" id="kpiEALSub">across scope</div></div>`;
 
 function updateKPIs() {
   if (!countyData) return;
@@ -1849,31 +1834,6 @@ function updateKPIs() {
   }
   // Risk: keep vs median comparison
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
-  // Top hazard = which hazard is #1 for the most people in this scope
-  // For each county, find its dominant hazard, then see which hazard dominates the most population
-  const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
-  const hazWins = {};
-  for (const r of rows) {
-    let best = null, bestV = -1;
-    for (const k of HAZARD_KEYS) {
-      if (TOP_HAZ_EXCLUDE.has(k)) continue;
-      const v = Number(r[k]);
-      if (!isNaN(v) && v > bestV) { bestV = v; best = k; }
-    }
-    if (best) {
-      if (!hazWins[best]) hazWins[best] = { pop: 0, count: 0 };
-      hazWins[best].pop += Number(r.population) || 0;
-      hazWins[best].count++;
-    }
-  }
-  const hazRanked = Object.entries(hazWins).map(([k, v]) => ({ k, ...v })).sort((a, b) => b.pop - a.pop);
-  const top = hazRanked[0];
-  if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `${top.count} counties, ${shortNum(top.pop)} people`; }
-  const restEl = document.getElementById("kpiHazardRest");
-  if (restEl) {
-    const rest = hazRanked.slice(1, 3);
-    restEl.innerHTML = rest.map(h => `<div class="kpi-haz-row"><span class="name">${HAZARD_PRETTY[h.k]}</span><span class="stat">${h.count} counties &middot; ${shortNum(h.pop)}</span></div>`).join("");
-  }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
 
@@ -1908,7 +1868,7 @@ async function loadFemaDeclarations(scope, rows) {
     const pct = Math.max(2, Math.round((r.count / maxCount) * 100));
     return `<div class="fema-row"><span class="fema-type">${r.type}</span><div class="fema-bar"><div class="fema-fill" style="width:${pct}%"></div></div><span class="fema-count">${r.count}</span></div>`;
   }).join("");
-  content.innerHTML = `<div class="fema-list">${listHTML}</div><div class="fema-footnote">Source: FEMA OpenData (DisasterDeclarationsSummaries). Major Disaster, Emergency, and Fire Management declarations for ${states.join(", ")} over the last ${data.lookbackYears} years. Deduplicated per disaster &times; state.</div>`;
+  content.innerHTML = `<div class="fema-list">${listHTML}</div><div class="fema-footnote">Ground-truth history of what has actually been declared. Source: FEMA OpenData (DisasterDeclarationsSummaries) &mdash; Major Disaster, Emergency, and Fire Management declarations for ${states.join(", ")} over the last ${data.lookbackYears} years, deduplicated per disaster &times; state. This is the reliable signal for hazard mix; FEMA NRI composite scores are intentionally excluded from KPIs because they conflate exposure, frequency, and resilience and can misrank familiar hazards like wildfire.</div>`;
 }
 
 // ───── Breadcrumb ───────────────────────────────────────────────────────────
