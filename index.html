@@ -279,6 +279,11 @@
     font-feature-settings: "tnum" 1;
   }
   .kpi-sub { font: 500 13px/1.4 var(--body); color: var(--fg); margin-top: 10px; font-feature-settings: "tnum" 1; }
+  .kpi-haz-rest { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+  .kpi-haz-rest:empty { display: none; }
+  .kpi-haz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .kpi-haz-row .name { font: 600 12px/1.2 var(--body); color: var(--fg); letter-spacing: 0.02em; }
+  .kpi-haz-row .stat { font: 500 12px/1.2 var(--body); color: var(--fg2); font-feature-settings: "tnum" 1; white-space: nowrap; }
 
   /* ───── Cards ─────────────────────────────────────────────────────────── */
   .card {
@@ -923,9 +928,10 @@
           <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Top Hazard</div>
+          <div class="kpi-label">Top Hazards</div>
           <div class="kpi-value" id="kpiHazard">&mdash;</div>
           <div class="kpi-sub" id="kpiHazardVal">&nbsp;</div>
+          <div class="kpi-haz-rest" id="kpiHazardRest"></div>
         </div>
         <div class="kpi-card full-width">
           <div class="kpi-label">Est. Annual Loss</div>
@@ -1829,6 +1835,11 @@ function updateKPIs() {
   const hazRanked = Object.entries(hazWins).map(([k, v]) => ({ k, ...v })).sort((a, b) => b.pop - a.pop);
   const top = hazRanked[0];
   if (top) { document.getElementById("kpiHazard").textContent = HAZARD_PRETTY[top.k]; document.getElementById("kpiHazardVal").textContent = `${top.count} counties, ${shortNum(top.pop)} people`; }
+  const restEl = document.getElementById("kpiHazardRest");
+  if (restEl) {
+    const rest = hazRanked.slice(1, 3);
+    restEl.innerHTML = rest.map(h => `<div class="kpi-haz-row"><span class="name">${HAZARD_PRETTY[h.k]}</span><span class="stat">${h.count} counties &middot; ${shortNum(h.pop)}</span></div>`).join("");
+  }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
 
