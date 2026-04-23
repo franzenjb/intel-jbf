@@ -255,7 +255,7 @@
   .kpi-card {
     background: var(--bg); border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    padding: 24px 28px;
+    padding: 16px 20px;
     opacity: 0; animation: cardIn 500ms var(--ease-out) forwards;
     position: relative;
   }
@@ -270,41 +270,41 @@
   .kpi-card.full-width { grid-column: 1 / -1; border-right: 0; }
 
   .kpi-label {
-    font: 600 11px/1 var(--body); color: var(--fg2);
+    font: 600 10px/1 var(--body); color: var(--fg2);
     text-transform: uppercase; letter-spacing: 0.1em;
   }
   .kpi-value {
-    font: 700 40px/1 var(--display); color: var(--red);
-    margin-top: 10px; letter-spacing: -0.03em;
+    font: 700 30px/1 var(--display); color: var(--red);
+    margin-top: 6px; letter-spacing: -0.03em;
     font-feature-settings: "tnum" 1;
   }
-  .kpi-sub { font: 500 13px/1.4 var(--body); color: var(--fg); margin-top: 10px; font-feature-settings: "tnum" 1; }
+  .kpi-sub { font: 500 12px/1.35 var(--body); color: var(--fg); margin-top: 6px; font-feature-settings: "tnum" 1; }
   .kpi-flag { display: inline-block; margin-left: 6px; color: var(--fg2); font-size: 11px; cursor: help; vertical-align: 1px; }
   .card-sub { font: 500 12px/1 var(--body); color: var(--fg2); letter-spacing: 0.02em; margin-left: 10px; text-transform: none; }
   .fema-list { display: flex; flex-direction: column; }
-  .fema-row { display: grid; grid-template-columns: minmax(0, 130px) minmax(0, 1fr) minmax(0, 56px); gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); min-width: 0; }
+  .fema-row { display: grid; grid-template-columns: minmax(0, 120px) minmax(0, 1fr) minmax(0, 48px); gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); min-width: 0; }
   .fema-row:last-of-type { border-bottom: 0; }
-  .fema-type { font: 600 13px/1 var(--body); color: var(--fg); letter-spacing: 0.01em; }
-  .fema-bar { background: rgba(255,255,255,0.06); height: 8px; border-radius: 2px; overflow: hidden; }
+  .fema-type { font: 600 12px/1 var(--body); color: var(--fg); letter-spacing: 0.01em; }
+  .fema-bar { background: rgba(255,255,255,0.06); height: 6px; border-radius: 2px; overflow: hidden; }
   .fema-fill { background: var(--red); height: 100%; border-radius: 2px; }
-  .fema-count { font: 700 18px/1 var(--display); color: var(--fg); text-align: right; font-feature-settings: "tnum" 1; letter-spacing: -0.02em; }
-  .fema-footnote { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); font: 500 11px/1.5 var(--body); color: var(--fg2); }
+  .fema-count { font: 700 14px/1 var(--display); color: var(--fg); text-align: right; font-feature-settings: "tnum" 1; letter-spacing: -0.02em; }
+  .fema-footnote { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font: 500 10.5px/1.45 var(--body); color: var(--fg2); }
   [data-theme="light"] .fema-bar { background: rgba(0,0,0,0.06); }
-  .kpi-footnote { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border); font: 500 11px/1.45 var(--body); color: var(--fg2); letter-spacing: 0.01em; }
-  .kpi-haz-rest { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+  .kpi-footnote { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); font: 500 10.5px/1.35 var(--body); color: var(--fg2); letter-spacing: 0.01em; }
+  .kpi-haz-rest { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
   .kpi-haz-rest:empty { display: none; }
-  .kpi-haz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .kpi-haz-row .name { font: 600 12px/1.2 var(--body); color: var(--fg); letter-spacing: 0.02em; }
-  .kpi-haz-row .stat { font: 500 12px/1.2 var(--body); color: var(--fg2); font-feature-settings: "tnum" 1; white-space: nowrap; }
+  .kpi-haz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .kpi-haz-row .name { font: 600 11px/1.2 var(--body); color: var(--fg); letter-spacing: 0.02em; }
+  .kpi-haz-row .stat { font: 500 11px/1.2 var(--body); color: var(--fg2); font-feature-settings: "tnum" 1; white-space: nowrap; }
 
   /* ───── Cards ─────────────────────────────────────────────────────────── */
   .card {
     background: var(--bg); border: 0; border-bottom: 1px solid var(--border);
-    border-radius: 0; padding: 28px;
+    border-radius: 0; padding: 18px 20px;
     animation: cardIn 500ms var(--ease-out);
   }
   .card h3 {
-    margin: 0 0 18px; font: 500 11px/1 var(--body); color: var(--muted);
+    margin: 0 0 12px; font: 500 11px/1 var(--body); color: var(--muted);
     text-transform: uppercase; letter-spacing: 0.14em;
     display: flex; align-items: center; gap: 10px;
   }
@@ -1902,7 +1902,7 @@ async function loadFemaDeclarations(scope, rows) {
   }
 
   subHint.textContent = `${data.totalDeclarations} declarations · ${states.join(", ")} · since ${data.sinceYear}`;
-  const top = data.ranked.slice(0, 8);
+  const top = data.ranked.slice(0, 6);
   const maxCount = top[0]?.count || 1;
   const listHTML = top.map(r => {
     const pct = Math.max(2, Math.round((r.count / maxCount) * 100));
