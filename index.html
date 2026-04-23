@@ -282,7 +282,7 @@
   .kpi-flag { display: inline-block; margin-left: 6px; color: var(--fg2); font-size: 11px; cursor: help; vertical-align: 1px; }
   .card-sub { font: 500 12px/1 var(--body); color: var(--fg2); letter-spacing: 0.02em; margin-left: 10px; text-transform: none; }
   .fema-list { display: flex; flex-direction: column; }
-  .fema-row { display: grid; grid-template-columns: 150px 1fr 56px; gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .fema-row { display: grid; grid-template-columns: minmax(0, 130px) minmax(0, 1fr) minmax(0, 56px); gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); min-width: 0; }
   .fema-row:last-of-type { border-bottom: 0; }
   .fema-type { font: 600 13px/1 var(--body); color: var(--fg); letter-spacing: 0.01em; }
   .fema-bar { background: rgba(255,255,255,0.06); height: 8px; border-radius: 2px; overflow: hidden; }
@@ -938,7 +938,6 @@
           <div class="kpi-label">Average Risk Score</div>
           <div class="kpi-value" id="kpiRisk">&mdash;</div>
           <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
-          <div class="kpi-haz-rest" id="kpiRiskLeaders"></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Top Hazards <span class="kpi-flag" title="Ranked by FEMA NRI composite score, not dollar loss or declaration history. NRI underweights wildfire in populous counties — treat as directional only. See FEMA Declarations below for ground-truth history.">&#9432;</span></div>
@@ -1328,13 +1327,13 @@ async function pickCounty(s) {
 async function zoomToCountyFips(fips) {
   const padded = String(fips).padStart(5, "0");
   const g = countyLayer?.graphics?.find(x => String(x.attributes.county_fips).padStart(5,"0") === padded);
-  if (g) { mapView.goTo({ target: g.geometry, zoom: Math.max(mapView.zoom, 8) }, { duration: 700 }); return; }
+  if (g) { safeGoTo({ target: g.geometry, zoom: Math.max(mapView.zoom, 8) }); return; }
   if (!arcgisMods) return;
   const { query, Query } = arcgisMods;
   try {
     const q = new Query({ where: `FIPS = '${padded}'`, returnGeometry: true, outFields: ["FIPS"], outSpatialReference: { wkid: 102100 } });
     const result = await query.executeQueryJSON(COUNTY_URL, q);
-    if (result.features.length > 0) mapView.goTo({ target: result.features[0].geometry, zoom: 8 }, { duration: 700 });
+    if (result.features.length > 0) safeGoTo({ target: result.features[0].geometry, zoom: 8 });
   } catch(e) { console.error("zoom to county failed", e); }
 }
 
@@ -1431,14 +1430,20 @@ async function activateScope(scope) {
 
   // Sidebar is ready — show KPIs, top counties, chat immediately
   renderTopCounties(); renderLegend(); updateKPIs(); loadChat(scope); updateSuggestions(scope);
-  loadFemaDeclarations(scope, countyData && countyData.rows);
 
-  // Choropleth loads in background — doesn't block the sidebar
-  renderChoropleth().then(() => {
+  // Choropleth loads in background — kick it off BEFORE any optional async work
+  // so nothing else can starve or block the map render.
+  const choroPromise = renderChoropleth();
+
+  // FEMA declarations — optional, isolated from map rendering
+  try { loadFemaDeclarations(scope, countyData && countyData.rows); }
+  catch (e) { console.warn("fema load failed", e); }
+
+  choroPromise.then(() => {
     if (!didZoom && countyLayer && countyLayer.graphics.length > 0) {
       let ext = null;
       countyLayer.graphics.forEach(g => { if (g.geometry?.extent) ext = ext ? ext.union(g.geometry.extent) : g.geometry.extent.clone(); });
-      if (ext) mapView.goTo(ext.expand(1.3), { duration: 900 });
+      if (ext) safeGoTo(ext.expand(1.3));
     }
   });
 }
@@ -1475,12 +1480,20 @@ async function renderBriefing(scope) {
 }
 
 // ───── Scope outline ─────────────────────────────────────────────────────────
+function safeGoTo(target, options) {
+  if (!mapView) return;
+  try {
+    const p = mapView.goTo(target, options || {});
+    if (p && typeof p.catch === "function") p.catch(e => console.warn("goTo ignored", e));
+  } catch (e) { console.warn("goTo threw", e); }
+}
 async function drawScopeOutline(scope) {
-  if (!arcgisMods) return false;
+  if (!arcgisMods || !mapView) return false;
+  try { await mapView.when(); } catch (_) {}
   const { Graphic, SimpleFillSymbol, SimpleLineSymbol, query, Query } = arcgisMods;
   outlineLayer.removeAll();
   if (scope.type === "national") {
-    mapView.goTo({ center: [-96, 39], zoom: 3.8 }, { duration: 900 });
+    safeGoTo({ center: [-96, 39], zoom: 3.8 });
     // Overlay 48 state boundaries by default so geography is readable on load
     previewScopeOutlines("state");
     return true;
@@ -1499,7 +1512,7 @@ async function drawScopeOutline(scope) {
         outlineLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes }));
         if (f.geometry.extent) fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
       }
-      if (fullExtent) mapView.goTo(fullExtent.expand(1.1), { duration: 900, easing: "ease-in-out" });
+      if (fullExtent) safeGoTo(fullExtent.expand(1.1));
       return true;
     } catch (e) { console.error("state outline failed", e); return false; }
   }
@@ -1519,7 +1532,7 @@ async function drawScopeOutline(scope) {
       outlineLayer.add(new Graphic({ geometry: f.geometry, symbol: sym, attributes: f.attributes }));
       if (f.geometry.extent) fullExtent = fullExtent ? fullExtent.union(f.geometry.extent) : f.geometry.extent.clone();
     }
-    if (fullExtent) mapView.goTo(fullExtent.expand(1.1), { duration: 900, easing: "ease-in-out" });
+    if (fullExtent) safeGoTo(fullExtent.expand(1.1));
     return true;
   } catch (e) { console.error("outline draw failed", e); return false; }
 }
@@ -1753,7 +1766,7 @@ function zoomToFips(fips) {
   if (!countyLayer) return;
   const g = countyLayer.graphics.find(x => String(x.attributes.county_fips).padStart(5,"0") === String(fips).padStart(5,"0"));
   if (!g) return;
-  mapView.goTo({ target: g.geometry, zoom: Math.max(mapView.zoom, 8) }, { duration: 700 });
+  safeGoTo({ target: g.geometry, zoom: Math.max(mapView.zoom, 8) });
   showCountyDetail(g.attributes);
 }
 
@@ -1834,15 +1847,6 @@ function updateKPIs() {
   }
   // Risk: keep vs median comparison
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
-  // Top 2 highest-risk counties in scope (balances Top Hazards tile visually)
-  const riskLeadEl = document.getElementById("kpiRiskLeaders");
-  if (riskLeadEl) {
-    const leaders = rows
-      .filter(r => r.risk_score != null)
-      .sort((a, b) => b.risk_score - a.risk_score)
-      .slice(0, 2);
-    riskLeadEl.innerHTML = leaders.map(r => `<div class="kpi-haz-row"><span class="name">${r.county_name}${r.state_abbr ? ", " + r.state_abbr : ""}</span><span class="stat">${Number(r.risk_score).toFixed(0)} &middot; ${shortNum(r.population || 0)}</span></div>`).join("");
-  }
   // Top hazard = which hazard is #1 for the most people in this scope
   // For each county, find its dominant hazard, then see which hazard dominates the most population
   const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
@@ -1876,7 +1880,6 @@ const FEMA_DECL_CACHE = new Map();
 async function loadFemaDeclarations(scope, rows) {
   const section = document.getElementById("femaDeclSection");
   if (!section) return;
-  if (scope?.type === "county") { section.hidden = true; return; }
   const states = [...new Set((rows || []).map(r => r.state_abbr).filter(Boolean))].sort();
   if (!states.length) { section.hidden = true; return; }
 
