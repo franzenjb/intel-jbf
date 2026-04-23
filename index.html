@@ -280,6 +280,16 @@
   }
   .kpi-sub { font: 500 13px/1.4 var(--body); color: var(--fg); margin-top: 10px; font-feature-settings: "tnum" 1; }
   .kpi-flag { display: inline-block; margin-left: 6px; color: var(--fg2); font-size: 11px; cursor: help; vertical-align: 1px; }
+  .card-sub { font: 500 12px/1 var(--body); color: var(--fg2); letter-spacing: 0.02em; margin-left: 10px; text-transform: none; }
+  .fema-list { display: flex; flex-direction: column; }
+  .fema-row { display: grid; grid-template-columns: 150px 1fr 56px; gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .fema-row:last-of-type { border-bottom: 0; }
+  .fema-type { font: 600 13px/1 var(--body); color: var(--fg); letter-spacing: 0.01em; }
+  .fema-bar { background: rgba(255,255,255,0.06); height: 8px; border-radius: 2px; overflow: hidden; }
+  .fema-fill { background: var(--red); height: 100%; border-radius: 2px; }
+  .fema-count { font: 700 18px/1 var(--display); color: var(--fg); text-align: right; font-feature-settings: "tnum" 1; letter-spacing: -0.02em; }
+  .fema-footnote { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); font: 500 11px/1.5 var(--body); color: var(--fg2); }
+  [data-theme="light"] .fema-bar { background: rgba(0,0,0,0.06); }
   .kpi-footnote { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border); font: 500 11px/1.45 var(--body); color: var(--fg2); letter-spacing: 0.01em; }
   .kpi-haz-rest { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
   .kpi-haz-rest:empty { display: none; }
@@ -928,13 +938,14 @@
           <div class="kpi-label">Average Risk Score</div>
           <div class="kpi-value" id="kpiRisk">&mdash;</div>
           <div class="kpi-sub" id="kpiRiskPctl">&nbsp;</div>
+          <div class="kpi-haz-rest" id="kpiRiskLeaders"></div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Top Hazards <span class="kpi-flag" title="Methodology note">&#9432;</span></div>
+          <div class="kpi-label">Top Hazards <span class="kpi-flag" title="Ranked by FEMA NRI composite score, not dollar loss or declaration history. NRI underweights wildfire in populous counties — treat as directional only. See FEMA Declarations below for ground-truth history.">&#9432;</span></div>
           <div class="kpi-value" id="kpiHazard">&mdash;</div>
           <div class="kpi-sub" id="kpiHazardVal">&nbsp;</div>
           <div class="kpi-haz-rest" id="kpiHazardRest"></div>
-          <div class="kpi-footnote">Ranked by FEMA NRI composite score, not dollar loss or declaration history. NRI systematically underweights wildfire in populous counties &mdash; treat as directional only. Switching to FEMA disaster-declaration counts is on the roadmap.</div>
+          <div class="kpi-footnote">NRI composite score &mdash; not dollar loss. See FEMA Declarations below for history.</div>
         </div>
         <div class="kpi-card full-width">
           <div class="kpi-label">Est. Annual Loss</div>
@@ -943,6 +954,10 @@
         </div>
       </div>
       <div id="divisionTable" hidden></div>
+      <div class="card" id="femaDeclSection" hidden>
+        <h3><span class="dot"></span>FEMA Disaster Declarations <span class="card-sub" id="femaSubHint"></span></h3>
+        <div id="femaDeclContent" class="loading">Loading FEMA data&hellip;<div class="shimmer"></div></div>
+      </div>
       <div class="card" id="briefingSection" hidden>
         <h3><span class="dot"></span>Executive Briefing <button class="refresh-btn" id="refreshBriefing" title="Regenerate briefing">&#x21bb;</button></h3>
         <div id="briefing" class="loading">Synthesizing&hellip;<div class="shimmer"></div></div>
@@ -1416,6 +1431,7 @@ async function activateScope(scope) {
 
   // Sidebar is ready — show KPIs, top counties, chat immediately
   renderTopCounties(); renderLegend(); updateKPIs(); loadChat(scope); updateSuggestions(scope);
+  loadFemaDeclarations(scope, countyData && countyData.rows);
 
   // Choropleth loads in background — doesn't block the sidebar
   renderChoropleth().then(() => {
@@ -1818,6 +1834,15 @@ function updateKPIs() {
   }
   // Risk: keep vs median comparison
   if (!isNat && riskAvg != null && nat.p50_risk != null) { const d = riskAvg - nat.p50_risk; document.getElementById("kpiRiskPctl").textContent = `${d >= 0 ? "+" : ""}${d.toFixed(0)} vs US median`; }
+  // Top 2 highest-risk counties in scope (balances Top Hazards tile visually)
+  const riskLeadEl = document.getElementById("kpiRiskLeaders");
+  if (riskLeadEl) {
+    const leaders = rows
+      .filter(r => r.risk_score != null)
+      .sort((a, b) => b.risk_score - a.risk_score)
+      .slice(0, 2);
+    riskLeadEl.innerHTML = leaders.map(r => `<div class="kpi-haz-row"><span class="name">${r.county_name}${r.state_abbr ? ", " + r.state_abbr : ""}</span><span class="stat">${Number(r.risk_score).toFixed(0)} &middot; ${shortNum(r.population || 0)}</span></div>`).join("");
+  }
   // Top hazard = which hazard is #1 for the most people in this scope
   // For each county, find its dominant hazard, then see which hazard dominates the most population
   const TOP_HAZ_EXCLUDE = new Set(["strong_wind_risk", "drought_risk"]);
@@ -1845,6 +1870,43 @@ function updateKPIs() {
   }
 }
 function avg(arr) { const vals = arr.filter(x => x != null && !Number.isNaN(Number(x))).map(Number); return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null; }
+
+// ───── FEMA Declarations (ground-truth history, complements NRI-scored Top Hazards) ─────
+const FEMA_DECL_CACHE = new Map();
+async function loadFemaDeclarations(scope, rows) {
+  const section = document.getElementById("femaDeclSection");
+  if (!section) return;
+  if (scope?.type === "county") { section.hidden = true; return; }
+  const states = [...new Set((rows || []).map(r => r.state_abbr).filter(Boolean))].sort();
+  if (!states.length) { section.hidden = true; return; }
+  // Too many states (national) — skip, would be dominated by TX/CA and uninformative
+  if (states.length > 12) { section.hidden = true; return; }
+
+  section.hidden = false;
+  const content = document.getElementById("femaDeclContent");
+  const subHint = document.getElementById("femaSubHint");
+  content.innerHTML = 'Loading FEMA declarations&hellip;<div class="shimmer"></div>';
+  subHint.textContent = "";
+
+  const key = states.join(",");
+  const cached = FEMA_DECL_CACHE.get(key);
+  const data = cached ? cached : await fetch(`/api/fema-declarations?states=${key}`).then(r => r.json()).catch(e => ({ error: String(e) }));
+  if (!cached && !data.error) FEMA_DECL_CACHE.set(key, data);
+
+  if (data.error) {
+    content.innerHTML = `<p style="color:var(--fg2)">FEMA data unavailable: ${data.error}</p>`;
+    return;
+  }
+
+  subHint.textContent = `${data.totalDeclarations} declarations · ${states.join(", ")} · since ${data.sinceYear}`;
+  const top = data.ranked.slice(0, 8);
+  const maxCount = top[0]?.count || 1;
+  const listHTML = top.map(r => {
+    const pct = Math.max(2, Math.round((r.count / maxCount) * 100));
+    return `<div class="fema-row"><span class="fema-type">${r.type}</span><div class="fema-bar"><div class="fema-fill" style="width:${pct}%"></div></div><span class="fema-count">${r.count}</span></div>`;
+  }).join("");
+  content.innerHTML = `<div class="fema-list">${listHTML}</div><div class="fema-footnote">Source: FEMA OpenData (DisasterDeclarationsSummaries). Major Disaster, Emergency, and Fire Management declarations for ${states.join(", ")} over the last ${data.lookbackYears} years. Deduplicated per disaster &times; state.</div>`;
+}
 
 // ───── Breadcrumb ───────────────────────────────────────────────────────────
 function updateBreadcrumb(scope) {
