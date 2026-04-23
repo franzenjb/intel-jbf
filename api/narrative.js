@@ -45,7 +45,16 @@ async function liveSynthesize(countyName, stateAbbr) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return ragContext ? ragContext.slice(0, 800) : null;
   }
-  const prompt = `Write a 100-150 word narrative about ${countyName}, ${stateAbbr}. Cover geography, economy, demographics, and any notable disaster history or community features. Write plain prose — no bullet points, no headers, no markdown. Be specific and factual.\n\nCONTEXT:\n${(ragContext || "No additional context.").slice(0, 3000)}`;
+  const prompt = `Write about ${countyName} County, ${stateAbbr} in exactly 3 short paragraphs (total 120-160 words):
+
+Paragraph 1: Geography and location — where it is, terrain, key features.
+Paragraph 2: Economy and people — population character, industries, ALICE/poverty if known.
+Paragraph 3: Disaster profile — historical events, primary hazard exposures, community resilience factors.
+
+Plain prose, no headers, no markdown, no bullet points.
+
+CONTEXT FROM KNOWLEDGE GRAPH:
+${(ragContext || "No additional context.").slice(0, 3000)}`;
 
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",

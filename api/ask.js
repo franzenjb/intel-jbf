@@ -60,13 +60,27 @@ export default async function handler(req, res) {
       queryLightRAG(question).catch(() => null),
     ]);
 
-    // If LightRAG returned context, append it as supplemental
-    let answer = sqlAnswer;
-    if (ragContext && ragContext.length > 20) {
-      answer += `\n\n---\n\n**Knowledge Graph Context**\n\n${ragContext}`;
+    // Build unified answer with source indicators
+    const hasSql = !!sqlAnswer;
+    const hasRag = ragContext && ragContext.length > 20;
+    let answer = "";
+    const sourceTags = [];
+    if (hasSql) sourceTags.push("SQL Data");
+    if (hasRag) sourceTags.push("Knowledge Graph");
+    const sourceHeader = sourceTags.length ? `**Sources:** ${sourceTags.join(" · ")}\n\n` : "";
+
+    if (hasSql && hasRag) {
+      // Both sources — present SQL answer first, then KG context clearly separated
+      answer = sourceHeader + sqlAnswer + `\n\n---\n\n**Additional Context (Knowledge Graph)**\n\n${ragContext}`;
+    } else if (hasSql) {
+      answer = sourceHeader + sqlAnswer;
+    } else if (hasRag) {
+      answer = sourceHeader + ragContext;
+    } else {
+      answer = "No relevant data found for this question.";
     }
 
-    return res.status(200).json({ answer, sources: { smart_query: !!sqlAnswer, lightrag: !!ragContext } });
+    return res.status(200).json({ answer, sources: { smart_query: hasSql, lightrag: hasRag } });
   } catch (e) {
     return res.status(502).json({ error: `Upstream error: ${e.message}` });
   }

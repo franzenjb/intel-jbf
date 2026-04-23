@@ -168,6 +168,7 @@
 
   /* ───── Briefing ────────────────────────────────────────────────────────── */
   #briefing { font-size: 15px; line-height: 1.75; color: var(--fg2); font-weight: 400; }
+  #briefing .brief-label { font-weight: 700; color: var(--fg); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
   #briefing.loading { color: var(--muted); font-style: italic; }
   #briefing .shimmer { display: inline-block; width: 80%; height: 14px; background: linear-gradient(90deg,rgba(0,0,0,0.04) 0%,rgba(0,0,0,0.08) 50%,rgba(0,0,0,0.04) 100%); background-size: 200% 100%; animation: sh 1.6s infinite; border-radius: 4px; margin-top: 6px; }
   @keyframes sh { to { background-position: -200% 0; } }
@@ -565,11 +566,11 @@
 
 <script>
 // ───── One-time theme migration (v2 redesign → light default) ────────────────
-if (localStorage.getItem("intel:ui_version") !== "3") {
+if (localStorage.getItem("intel:ui_version") !== "4") {
   localStorage.removeItem("intel:theme");
-  // Clear stale briefing caches from previous versions
-  Object.keys(localStorage).filter(k => k.startsWith("intel:brief:")).forEach(k => localStorage.removeItem(k));
-  localStorage.setItem("intel:ui_version", "3");
+  // Clear stale briefing + narrative caches from previous versions
+  Object.keys(localStorage).filter(k => k.startsWith("intel:brief:") || k.startsWith("intel:narrative:")).forEach(k => localStorage.removeItem(k));
+  localStorage.setItem("intel:ui_version", "4");
 }
 
 // ───── Gate: ensure authed ───────────────────────────────────────────────────
@@ -910,17 +911,22 @@ async function fetchCountyData(scope) {
 }
 
 // ───── Briefing ──────────────────────────────────────────────────────────────
+function formatBriefing(text) {
+  // Format LEAD:/RISK:/FRAGILITY:/ACTION: labels as styled spans
+  const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return esc(text).replace(/^(LEAD|RISK|FRAGILITY|ACTION):\s*/gm, '<span class="brief-label">$1:</span> ');
+}
 async function renderBriefing(scope) {
   const briefEl = document.getElementById("briefing");
   const key = `intel:brief:v4:${scope.type}:${scope.code || scope.name}`;
   const cached = localStorage.getItem(key);
-  if (cached) { briefEl.classList.remove("loading"); briefEl.textContent = cached; return; }
+  if (cached) { briefEl.classList.remove("loading"); briefEl.innerHTML = formatBriefing(cached); return; }
   briefEl.classList.add("loading"); briefEl.innerHTML = "Synthesizing…<div class=\"shimmer\"></div>";
   try {
     const r = await fetch("/api/briefing", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ scope }) });
     const j = await r.json();
     const text = (j.briefing || j.answer || j.error || "").trim();
-    briefEl.classList.remove("loading"); briefEl.textContent = text;
+    briefEl.classList.remove("loading"); briefEl.innerHTML = formatBriefing(text);
     if (j.briefing) localStorage.setItem(key, j.briefing);
   } catch (e) { briefEl.classList.remove("loading"); briefEl.textContent = "Briefing unavailable — try the Ask tab."; }
 }
